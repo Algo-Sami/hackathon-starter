@@ -1,20 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { loginAction } from "@/app/actions/auth";
 import { GoogleButton } from "@/components/auth/GoogleButton";
-import { CaptchaSlot } from "@/components/auth/CaptchaSlot";
+import {
+  GoogleRecaptcha,
+  type GoogleRecaptchaRef,
+} from "@/components/auth/GoogleRecaptcha";
 import { t } from "@/lib/i18n";
 
 export function LoginForm({ next = "/" }: { next?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState("");
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const recaptchaRef = useRef<GoogleRecaptchaRef>(null);
 
   const validate = (): boolean => {
     const errs: { email?: string; password?: string } = {};
@@ -29,6 +36,14 @@ export function LoginForm({ next = "/" }: { next?: string }) {
     }
 
     setFieldErrors(errs);
+
+    if (!recaptchaToken.trim()) {
+      setCaptchaError(t("auth.captcha.errorMessage"));
+      return false;
+    } else {
+      setCaptchaError(null);
+    }
+
     return Object.keys(errs).length === 0;
   };
 
@@ -43,12 +58,16 @@ export function LoginForm({ next = "/" }: { next?: string }) {
     formData.append("email", email);
     formData.append("password", password);
     formData.append("next", next);
+    formData.append("recaptchaToken", recaptchaToken);
 
     try {
       const res = await loginAction(formData);
       if (res && !res.success) {
         setErrorKey(res.errorKey || "auth.errors.invalidCredentials");
         setIsSubmitting(false);
+        // Reset reCAPTCHA on failure so user must re-verify
+        recaptchaRef.current?.reset();
+        setRecaptchaToken("");
       }
     } catch {
       // If Next.js redirect threw or network error, let redirect proceed or handle error
@@ -163,8 +182,21 @@ export function LoginForm({ next = "/" }: { next?: string }) {
         )}
       </div>
 
-      {/* CAPTCHA Slot */}
-      <CaptchaSlot />
+      {/* Google reCAPTCHA v2 Component */}
+      <GoogleRecaptcha
+        ref={recaptchaRef}
+        onVerify={(token) => {
+          setRecaptchaToken(token);
+          setCaptchaError(null);
+        }}
+        onExpire={() => {
+          setRecaptchaToken("");
+        }}
+        onError={() => {
+          setRecaptchaToken("");
+        }}
+        errorMessage={captchaError || undefined}
+      />
 
       {/* Submit button */}
       <button

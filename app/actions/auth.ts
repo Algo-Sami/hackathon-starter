@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { verifyRecaptchaToken } from "@/lib/recaptcha";
 
 export interface AuthActionResult {
   success: boolean;
@@ -15,10 +16,23 @@ export async function loginAction(
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const next = (formData.get("next") as string) || "/";
+  const recaptchaToken = (
+    formData.get("recaptchaToken") || formData.get("g-recaptcha-response")
+  ) as string;
 
   // Sanitize next redirect
   const safeNext =
     next.startsWith("/") && !next.startsWith("//") ? next : "/";
+
+  // Strict backend reCAPTCHA token verification
+  if (!recaptchaToken || !recaptchaToken.trim()) {
+    return { success: false, errorKey: "auth.errors.captchaRequired" };
+  }
+
+  const captchaVerification = await verifyRecaptchaToken(recaptchaToken);
+  if (!captchaVerification.success) {
+    return { success: false, errorKey: "auth.errors.captchaFailed" };
+  }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { success: false, errorKey: "auth.errors.emailInvalid" };
@@ -56,6 +70,19 @@ export async function registerAction(
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const recaptchaToken = (
+    formData.get("recaptchaToken") || formData.get("g-recaptcha-response")
+  ) as string;
+
+  // Strict backend reCAPTCHA token verification
+  if (!recaptchaToken || !recaptchaToken.trim()) {
+    return { success: false, errorKey: "auth.errors.captchaRequired" };
+  }
+
+  const captchaVerification = await verifyRecaptchaToken(recaptchaToken);
+  if (!captchaVerification.success) {
+    return { success: false, errorKey: "auth.errors.captchaFailed" };
+  }
 
   // Validation
   if (!fullName) {

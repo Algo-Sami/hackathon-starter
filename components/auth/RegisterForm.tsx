@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, AlertCircle, MailCheck } from "lucide-react";
 import { registerAction } from "@/app/actions/auth";
 import { GoogleButton } from "@/components/auth/GoogleButton";
-import { CaptchaSlot } from "@/components/auth/CaptchaSlot";
+import {
+  GoogleRecaptcha,
+  type GoogleRecaptchaRef,
+} from "@/components/auth/GoogleRecaptcha";
 import { t } from "@/lib/i18n";
 
 export function RegisterForm() {
@@ -14,6 +17,8 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState("");
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     fullName?: string;
@@ -23,6 +28,8 @@ export function RegisterForm() {
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+
+  const recaptchaRef = useRef<GoogleRecaptchaRef>(null);
 
   const validate = (): boolean => {
     const errs: {
@@ -55,6 +62,14 @@ export function RegisterForm() {
     }
 
     setFieldErrors(errs);
+
+    if (!recaptchaToken.trim()) {
+      setCaptchaError(t("auth.captcha.errorMessage"));
+      return false;
+    } else {
+      setCaptchaError(null);
+    }
+
     return Object.keys(errs).length === 0;
   };
 
@@ -70,12 +85,15 @@ export function RegisterForm() {
     formData.append("email", email);
     formData.append("password", password);
     formData.append("confirmPassword", confirmPassword);
+    formData.append("recaptchaToken", recaptchaToken);
 
     try {
       const res = await registerAction(formData);
       if (res && !res.success) {
         setErrorKey(res.errorKey || "auth.errors.genericError");
         setIsSubmitting(false);
+        recaptchaRef.current?.reset();
+        setRecaptchaToken("");
       } else if (res && res.needsEmailConfirmation) {
         setNeedsEmailConfirmation(true);
         setIsSubmitting(false);
@@ -98,19 +116,21 @@ export function RegisterForm() {
         <p className="text-xs text-muted leading-relaxed">
           {t("auth.register.checkEmailMessage")}
         </p>
-        <Link
-          href="/login"
-          className="inline-block mt-3 text-xs text-primary hover:underline font-medium"
-        >
-          {t("auth.register.loginLink")}
-        </Link>
+        <div className="pt-2">
+          <Link
+            href="/login"
+            className="text-xs text-primary font-medium hover:underline"
+          >
+            {t("auth.register.loginLink")}
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
-      {/* Global Error Banner */}
+      {/* Global Error Alert */}
       {errorKey && (
         <div
           role="alert"
@@ -143,7 +163,7 @@ export function RegisterForm() {
           placeholder={t("auth.register.fullNamePlaceholder")}
           aria-invalid={!!fieldErrors.fullName}
           aria-describedby={
-            fieldErrors.fullName ? "register-name-error" : undefined
+            fieldErrors.fullName ? "register-fullname-error" : undefined
           }
           className={`w-full text-sm bg-surface border rounded px-3.5 py-2 text-foreground placeholder:text-muted transition-colors focus:bg-background focus:outline-none ${
             fieldErrors.fullName
@@ -152,7 +172,7 @@ export function RegisterForm() {
           }`}
         />
         {fieldErrors.fullName && (
-          <p id="register-name-error" className="mt-1 text-xs text-red-600">
+          <p id="register-fullname-error" className="mt-1 text-xs text-red-600">
             {fieldErrors.fullName}
           </p>
         )}
@@ -292,8 +312,21 @@ export function RegisterForm() {
         )}
       </div>
 
-      {/* CAPTCHA Slot */}
-      <CaptchaSlot />
+      {/* Google reCAPTCHA v2 Component */}
+      <GoogleRecaptcha
+        ref={recaptchaRef}
+        onVerify={(token) => {
+          setRecaptchaToken(token);
+          setCaptchaError(null);
+        }}
+        onExpire={() => {
+          setRecaptchaToken("");
+        }}
+        onError={() => {
+          setRecaptchaToken("");
+        }}
+        errorMessage={captchaError || undefined}
+      />
 
       {/* Submit Button */}
       <button
@@ -306,7 +339,7 @@ export function RegisterForm() {
           : t("auth.register.submitButton")}
       </button>
 
-      {/* "or" divider */}
+      {/* "or" Divider */}
       <div className="relative my-4 flex items-center justify-center">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
@@ -316,10 +349,10 @@ export function RegisterForm() {
         </div>
       </div>
 
-      {/* Continue with Google button */}
-      <GoogleButton next="/" />
+      {/* Continue with Google */}
+      <GoogleButton />
 
-      {/* Already have an account link */}
+      {/* Back to Login */}
       <div className="text-center pt-2 text-xs text-muted">
         <span>{t("auth.register.hasAccount")} </span>
         <Link

@@ -258,7 +258,9 @@
       "emailAlreadyRegistered": "",
       "networkError": "",
       "googleCancelled": "",
-      "genericError": ""
+      "genericError": "",
+      "captchaRequired": "براہ کرم کیپچا مکمل کریں۔",
+      "captchaFailed": "کیپچا کی تصدیق ناکام ہو گئی۔ براہ کرم دوبارہ کوشش کریں۔"
     }
   },
   "notFound": {

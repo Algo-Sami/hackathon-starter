@@ -258,7 +258,9 @@
       "emailAlreadyRegistered": "An account with this email address already exists.",
       "networkError": "A network connection error occurred. Please try again.",
       "googleCancelled": "Google sign-in was cancelled or encountered an error. Please try again.",
-      "genericError": "Something went wrong. Please try again later."
+      "genericError": "Something went wrong. Please try again later.",
+      "captchaRequired": "Please complete the CAPTCHA.",
+      "captchaFailed": "CAPTCHA verification failed. Please try again."
     }
   },
   "notFound": {
