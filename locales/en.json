@@ -1,0 +1,294 @@
+{
+  "site": {
+    "name": "YourApp",
+    "tagline": "A clean, modern foundation for your next product.",
+    "description": "A reusable, production-ready starter built with Next.js App Router, TypeScript, and Tailwind CSS."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "features": "Features",
+    "contact": "Contact",
+    "login": "Log in",
+    "signup": "Sign up",
+    "langEn": "EN",
+    "langUr": "اردو",
+    "openMenu": "Open main menu",
+    "closeMenu": "Close main menu"
+  },
+  "home": {
+    "hero": {
+      "badge": "Modern Starter",
+      "title": "A modern foundation for your next big idea.",
+      "subtitle": "Build faster and scale with confidence using a clean, production-ready architecture designed for rapid development.",
+      "getStarted": "Get started",
+      "learnMore": "Learn more"
+    },
+    "features": {
+      "sectionTitle": "Engineered for simplicity and scale",
+      "sectionSubtitle": "Everything you need to move from prototype to production with zero unnecessary complexity.",
+      "items": {
+        "fast": {
+          "title": "Fast & Lightweight",
+          "description": "Optimized for minimal bundle size and lightning-fast render performance."
+        },
+        "modular": {
+          "title": "Modular Architecture",
+          "description": "Easily replace components, configurations, and copy without touching core logic."
+        },
+        "accessible": {
+          "title": "Accessible & Clean",
+          "description": "Built with semantic HTML, high contrast, and keyboard navigation support."
+        }
+      }
+    },
+    "howItWorks": {
+      "sectionTitle": "How it works",
+      "sectionSubtitle": "Three simple steps to take your concept from idea to production deployment.",
+      "step1": {
+        "title": "Define requirements",
+        "description": "Structure your data model and user flows using our standardized patterns."
+      },
+      "step2": {
+        "title": "Customize & integrate",
+        "description": "Configure theme tokens, replace placeholder copy, and wire up your backend APIs."
+      },
+      "step3": {
+        "title": "Deploy with confidence",
+        "description": "Ship production builds with automated validation and responsive client interfaces."
+      }
+    },
+    "cta": {
+      "title": "Ready to build your next product?",
+      "subtitle": "Get started today with our reusable starter template and accelerate your product roadmap.",
+      "button": "Get started"
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "About Our Platform",
+      "subtitle": "We provide solid foundations for ambitious teams building the future of software."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "text": "Our mission is to simplify product development by providing clean, well-architected starters that eliminate boilerplate friction. We believe great products start with great developer experience and resilient architectures."
+    },
+    "goal": {
+      "title": "Our Goal",
+      "text": "We aim to empower creators, developers, and organizations to launch high-quality digital products in days rather than months, maintaining strict standards for performance, accessibility, and maintainability."
+    },
+    "team": {
+      "title": "Our Team",
+      "subtitle": "The dedicated team behind the design and engineering of the platform.",
+      "members": {
+        "member1": {
+          "name": "Sarah Jenkins",
+          "role": "Product Architect",
+          "initials": "SJ"
+        },
+        "member2": {
+          "name": "Alex Rivera",
+          "role": "Lead Systems Engineer",
+          "initials": "AR"
+        },
+        "member3": {
+          "name": "Maya Patel",
+          "role": "Head of Design",
+          "initials": "MP"
+        }
+      }
+    }
+  },
+  "featuresPage": {
+    "hero": {
+      "title": "Features & Capabilities",
+      "subtitle": "A comprehensive suite of essential tools and architecture built for modern web applications."
+    },
+    "items": {
+      "feature1": {
+        "title": "Next-Gen Performance",
+        "description": "Ultra-fast page loads powered by server components and optimized streaming."
+      },
+      "feature2": {
+        "title": "Modular Design System",
+        "description": "Easily configurable tokens, color schemes, and system typography."
+      },
+      "feature3": {
+        "title": "Secure by Default",
+        "description": "Built-in security best practices, typed schema checks, and protected routes."
+      },
+      "feature4": {
+        "title": "Internationalization Ready",
+        "description": "Seamless multi-language architecture with pluggable translation files."
+      },
+      "feature5": {
+        "title": "Accessible Interfaces",
+        "description": "Strict adherence to WCAG standards, ARIA attributes, and keyboard control."
+      },
+      "feature6": {
+        "title": "Developer First",
+        "description": "Full TypeScript support, strict type checking, and zero-configuration setups."
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question or looking to collaborate? Send us a message and our team will get back to you promptly.",
+    "form": {
+      "nameLabel": "Full Name",
+      "namePlaceholder": "Enter your full name",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "you@example.com",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "How can we help?",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Write your message here...",
+      "submitButton": "Send Message",
+      "submitting": "Sending..."
+    },
+    "validation": {
+      "nameRequired": "Please enter your name.",
+      "emailRequired": "Please enter your email address.",
+      "emailInvalid": "Please enter a valid email address.",
+      "subjectRequired": "Please enter a subject.",
+      "messageRequired": "Please enter your message.",
+      "messageMinLength": "Message must be at least 10 characters long."
+    },
+    "success": {
+      "title": "Message Sent Successfully!",
+      "message": "Thank you for reaching out. We have received your inquiry and will reply shortly.",
+      "reset": "Send another message"
+    },
+    "info": {
+      "title": "Contact Information",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "addressLabel": "Office Address",
+      "hoursLabel": "Business Hours"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Log in to your account",
+      "subtitle": "Enter your credentials to access your account",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "forgotPassword": "Forgot password?",
+      "submitButton": "Log in",
+      "submitting": "Logging in...",
+      "orDivider": "or",
+      "googleButton": "Continue with Google",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up",
+      "backHome": "Back to home"
+    },
+    "register": {
+      "title": "Create an account",
+      "subtitle": "Sign up to get started with the platform",
+      "fullNameLabel": "Full name",
+      "fullNamePlaceholder": "Enter your full name",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Create a password (min. 8 characters)",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Re-enter your password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "submitButton": "Create account",
+      "submitting": "Creating account...",
+      "orDivider": "or",
+      "googleButton": "Continue with Google",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Log in",
+      "backHome": "Back to home",
+      "checkEmailTitle": "Check your email",
+      "checkEmailMessage": "We've sent a verification link to your email. Please click the link to complete your signup."
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email address and we will send you a link to reset your password",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "submitButton": "Send reset link",
+      "submitting": "Sending...",
+      "successTitle": "Reset link sent",
+      "successMessage": "If an account exists for that email, a password reset link has been sent.",
+      "backToLogin": "Back to log in",
+      "backHome": "Back to home"
+    },
+    "resetPassword": {
+      "title": "Set new password",
+      "subtitle": "Enter your new password below",
+      "newPasswordLabel": "New password",
+      "newPasswordPlaceholder": "Enter new password (min. 8 characters)",
+      "confirmPasswordLabel": "Confirm new password",
+      "confirmPasswordPlaceholder": "Re-enter new password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "submitButton": "Update password",
+      "submitting": "Updating...",
+      "successTitle": "Password updated successfully",
+      "successMessage": "Your password has been changed. You can now log in with your new password.",
+      "loginButton": "Go to log in"
+    },
+    "captcha": {
+      "label": "I'm not a robot",
+      "errorMessage": "Please complete the CAPTCHA."
+    },
+    "dropdown": {
+      "avatarAria": "Open user menu",
+      "signedInAs": "Signed in as",
+      "logout": "Log out",
+      "loggingOut": "Logging out..."
+    },
+    "errors": {
+      "nameRequired": "Please enter your full name.",
+      "emailRequired": "Please enter your email address.",
+      "emailInvalid": "Please enter a valid email address.",
+      "passwordRequired": "Please enter a password.",
+      "passwordMinLength": "Password must be at least 8 characters long.",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordsDoNotMatch": "Passwords do not match.",
+      "invalidCredentials": "Invalid email or password. Please check your credentials.",
+      "emailAlreadyRegistered": "An account with this email address already exists.",
+      "networkError": "A network connection error occurred. Please try again.",
+      "googleCancelled": "Google sign-in was cancelled or encountered an error. Please try again.",
+      "genericError": "Something went wrong. Please try again later."
+    }
+  },
+  "notFound": {
+    "code": "404",
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to Home"
+  },
+  "footer": {
+    "tagline": "A clean, modern foundation for your next web application.",
+    "productTitle": "Product",
+    "companyTitle": "Company",
+    "contactTitle": "Contact",
+    "copyright": "© {year} {name}. All rights reserved."
+  },
+  "chat": {
+    "title": "AI Assistant",
+    "subtitle": "Virtual Support",
+    "welcomeMessage": "Hi there! I am your AI assistant. How can I help you explore our product today?",
+    "inputPlaceholder": "Type a message...",
+    "sendButton": "Send message",
+    "voicePlaceholder": "Voice input (coming soon)",
+    "closeButton": "Close AI assistant",
+    "openButton": "Open AI assistant",
+    "typingIndicator": "AI is typing...",
+    "dummyReply": "Thank you for your message! This is a placeholder AI response. Connect your backend API to enable real-time intelligent conversations.",
+    "chips": {
+      "chip1": "What features are included?",
+      "chip2": "How do I get started?",
+      "chip3": "Where can I contact support?"
+    }
+  }
+}

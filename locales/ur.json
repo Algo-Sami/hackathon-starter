@@ -1,0 +1,294 @@
+{
+  "site": {
+    "name": "",
+    "tagline": "",
+    "description": ""
+  },
+  "nav": {
+    "home": "",
+    "about": "",
+    "features": "",
+    "contact": "",
+    "login": "",
+    "signup": "",
+    "langEn": "",
+    "langUr": "",
+    "openMenu": "",
+    "closeMenu": ""
+  },
+  "home": {
+    "hero": {
+      "badge": "",
+      "title": "",
+      "subtitle": "",
+      "getStarted": "",
+      "learnMore": ""
+    },
+    "features": {
+      "sectionTitle": "",
+      "sectionSubtitle": "",
+      "items": {
+        "fast": {
+          "title": "",
+          "description": ""
+        },
+        "modular": {
+          "title": "",
+          "description": ""
+        },
+        "accessible": {
+          "title": "",
+          "description": ""
+        }
+      }
+    },
+    "howItWorks": {
+      "sectionTitle": "",
+      "sectionSubtitle": "",
+      "step1": {
+        "title": "",
+        "description": ""
+      },
+      "step2": {
+        "title": "",
+        "description": ""
+      },
+      "step3": {
+        "title": "",
+        "description": ""
+      }
+    },
+    "cta": {
+      "title": "",
+      "subtitle": "",
+      "button": ""
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "",
+      "subtitle": ""
+    },
+    "mission": {
+      "title": "",
+      "text": ""
+    },
+    "goal": {
+      "title": "",
+      "text": ""
+    },
+    "team": {
+      "title": "",
+      "subtitle": "",
+      "members": {
+        "member1": {
+          "name": "",
+          "role": "",
+          "initials": ""
+        },
+        "member2": {
+          "name": "",
+          "role": "",
+          "initials": ""
+        },
+        "member3": {
+          "name": "",
+          "role": "",
+          "initials": ""
+        }
+      }
+    }
+  },
+  "featuresPage": {
+    "hero": {
+      "title": "",
+      "subtitle": ""
+    },
+    "items": {
+      "feature1": {
+        "title": "",
+        "description": ""
+      },
+      "feature2": {
+        "title": "",
+        "description": ""
+      },
+      "feature3": {
+        "title": "",
+        "description": ""
+      },
+      "feature4": {
+        "title": "",
+        "description": ""
+      },
+      "feature5": {
+        "title": "",
+        "description": ""
+      },
+      "feature6": {
+        "title": "",
+        "description": ""
+      }
+    }
+  },
+  "contact": {
+    "title": "",
+    "subtitle": "",
+    "form": {
+      "nameLabel": "",
+      "namePlaceholder": "",
+      "emailLabel": "",
+      "emailPlaceholder": "",
+      "subjectLabel": "",
+      "subjectPlaceholder": "",
+      "messageLabel": "",
+      "messagePlaceholder": "",
+      "submitButton": "",
+      "submitting": ""
+    },
+    "validation": {
+      "nameRequired": "",
+      "emailRequired": "",
+      "emailInvalid": "",
+      "subjectRequired": "",
+      "messageRequired": "",
+      "messageMinLength": ""
+    },
+    "success": {
+      "title": "",
+      "message": "",
+      "reset": ""
+    },
+    "info": {
+      "title": "",
+      "emailLabel": "",
+      "phoneLabel": "",
+      "addressLabel": "",
+      "hoursLabel": ""
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "",
+      "subtitle": "",
+      "emailLabel": "",
+      "emailPlaceholder": "",
+      "passwordLabel": "",
+      "passwordPlaceholder": "",
+      "showPassword": "",
+      "hidePassword": "",
+      "forgotPassword": "",
+      "submitButton": "",
+      "submitting": "",
+      "orDivider": "",
+      "googleButton": "",
+      "noAccount": "",
+      "signupLink": "",
+      "backHome": ""
+    },
+    "register": {
+      "title": "",
+      "subtitle": "",
+      "fullNameLabel": "",
+      "fullNamePlaceholder": "",
+      "emailLabel": "",
+      "emailPlaceholder": "",
+      "passwordLabel": "",
+      "passwordPlaceholder": "",
+      "confirmPasswordLabel": "",
+      "confirmPasswordPlaceholder": "",
+      "showPassword": "",
+      "hidePassword": "",
+      "submitButton": "",
+      "submitting": "",
+      "orDivider": "",
+      "googleButton": "",
+      "hasAccount": "",
+      "loginLink": "",
+      "backHome": "",
+      "checkEmailTitle": "",
+      "checkEmailMessage": ""
+    },
+    "forgotPassword": {
+      "title": "",
+      "subtitle": "",
+      "emailLabel": "",
+      "emailPlaceholder": "",
+      "submitButton": "",
+      "submitting": "",
+      "successTitle": "",
+      "successMessage": "",
+      "backToLogin": "",
+      "backHome": ""
+    },
+    "resetPassword": {
+      "title": "",
+      "subtitle": "",
+      "newPasswordLabel": "",
+      "newPasswordPlaceholder": "",
+      "confirmPasswordLabel": "",
+      "confirmPasswordPlaceholder": "",
+      "showPassword": "",
+      "hidePassword": "",
+      "submitButton": "",
+      "submitting": "",
+      "successTitle": "",
+      "successMessage": "",
+      "loginButton": ""
+    },
+    "captcha": {
+      "label": "",
+      "errorMessage": ""
+    },
+    "dropdown": {
+      "avatarAria": "",
+      "signedInAs": "",
+      "logout": "",
+      "loggingOut": ""
+    },
+    "errors": {
+      "nameRequired": "",
+      "emailRequired": "",
+      "emailInvalid": "",
+      "passwordRequired": "",
+      "passwordMinLength": "",
+      "confirmPasswordRequired": "",
+      "passwordsDoNotMatch": "",
+      "invalidCredentials": "",
+      "emailAlreadyRegistered": "",
+      "networkError": "",
+      "googleCancelled": "",
+      "genericError": ""
+    }
+  },
+  "notFound": {
+    "code": "",
+    "title": "",
+    "description": "",
+    "backHome": ""
+  },
+  "footer": {
+    "tagline": "",
+    "productTitle": "",
+    "companyTitle": "",
+    "contactTitle": "",
+    "copyright": ""
+  },
+  "chat": {
+    "title": "",
+    "subtitle": "",
+    "welcomeMessage": "",
+    "inputPlaceholder": "",
+    "sendButton": "",
+    "voicePlaceholder": "",
+    "closeButton": "",
+    "openButton": "",
+    "typingIndicator": "",
+    "dummyReply": "",
+    "chips": {
+      "chip1": "",
+      "chip2": "",
+      "chip3": ""
+    }
+  }
+}
