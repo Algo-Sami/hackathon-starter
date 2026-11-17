@@ -6,7 +6,6 @@ import {
   useRef,
   useEffect,
   useState,
-  useCallback,
 } from "react";
 import { getLocale } from "@/lib/i18n";
 
@@ -70,6 +69,12 @@ export const GoogleRecaptcha = forwardRef<
   const widgetIdRef = useRef<number | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Store callbacks in ref so changes in parent re-renders don't retrigger effects
+  const callbacksRef = useRef({ onVerify, onExpire, onError });
+  useEffect(() => {
+    callbacksRef.current = { onVerify, onExpire, onError };
+  });
+
   // Determine active site key and language
   const resolvedSiteKey =
     siteKey || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
@@ -110,39 +115,6 @@ export const GoogleRecaptcha = forwardRef<
     []
   );
 
-  const renderWidget = useCallback(() => {
-    if (!containerRef.current || !window.grecaptcha || !resolvedSiteKey) return;
-
-    // If already rendered in this container, skip
-    if (widgetIdRef.current !== null) {
-      return;
-    }
-
-    try {
-      // Clear container children if any leftovers
-      containerRef.current.innerHTML = "";
-
-      const id = window.grecaptcha.render(containerRef.current, {
-        sitekey: resolvedSiteKey,
-        callback: (token: string) => {
-          onVerify?.(token);
-        },
-        "expired-callback": () => {
-          onExpire?.();
-        },
-        "error-callback": () => {
-          onError?.();
-        },
-        theme: "light",
-      });
-
-      widgetIdRef.current = id;
-      setIsLoaded(true);
-    } catch (err) {
-      console.error("Error rendering reCAPTCHA widget:", err);
-    }
-  }, [resolvedSiteKey, onVerify, onExpire, onError]);
-
   useEffect(() => {
     if (!resolvedSiteKey) {
       console.warn(
@@ -151,52 +123,101 @@ export const GoogleRecaptcha = forwardRef<
       return;
     }
 
+    let isMounted = true;
     const scriptId = `${SCRIPT_ID_PREFIX}-${resolvedHl}`;
 
-    // Handle when script is loaded
-    const onScriptReady = () => {
-      if (window.grecaptcha) {
-        window.grecaptcha.ready(() => {
-          renderWidget();
+    const doRender = () => {
+      if (!isMounted || !containerRef.current || !window.grecaptcha) return;
+
+      // If already rendered in this component instance, don't re-render
+      if (widgetIdRef.current !== null) {
+        return;
+      }
+
+      // If the DOM container already has child elements (e.g. from grecaptcha), avoid duplicate render
+      if (containerRef.current.hasChildNodes()) {
+        setIsLoaded(true);
+        return;
+      }
+
+      try {
+        const id = window.grecaptcha.render(containerRef.current, {
+          sitekey: resolvedSiteKey,
+          callback: (token: string) => {
+            callbacksRef.current.onVerify?.(token);
+          },
+          "expired-callback": () => {
+            callbacksRef.current.onExpire?.();
+          },
+          "error-callback": () => {
+            callbacksRef.current.onError?.();
+          },
+          theme: "light",
         });
+
+        if (isMounted) {
+          widgetIdRef.current = id;
+          setIsLoaded(true);
+        }
+      } catch (err) {
+        console.warn("reCAPTCHA render notice:", err);
       }
     };
 
-    // If grecaptcha is already available and current script matches language
+    const onScriptReady = () => {
+      if (window.grecaptcha) {
+        window.grecaptcha.ready(doRender);
+      }
+    };
+
+    // If script for active language already exists and grecaptcha is ready
     const existingScript = document.getElementById(scriptId);
     if (window.grecaptcha && existingScript) {
       onScriptReady();
       return;
     }
 
-    // Set global callback
+    // Assign global callback
     window.onGoogleRecaptchaLoad = () => {
       onScriptReady();
     };
 
-    // If a script for a different language exists, remove it
-    const oldScripts = document.querySelectorAll(`script[id^="${SCRIPT_ID_PREFIX}"]`);
-    oldScripts.forEach((s) => s.remove());
-    widgetIdRef.current = null;
+    // Clean up any script loaded for an alternate language
+    const oldScripts = document.querySelectorAll(
+      `script[id^="${SCRIPT_ID_PREFIX}"]`
+    );
+    let needNewScript = true;
+    oldScripts.forEach((s) => {
+      if (s.id === scriptId) {
+        needNewScript = false;
+      } else {
+        s.remove();
+        widgetIdRef.current = null;
+        if (containerRef.current) {
+          containerRef.current.innerHTML = "";
+        }
+      }
+    });
 
-    // Inject dynamic script tag
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = `https://www.google.com/recaptcha/api.js?onload=onGoogleRecaptchaLoad&render=explicit&hl=${resolvedHl}`;
-    script.async = true;
-    script.defer = true;
-    script.onerror = () => {
-      console.error("Failed to load Google reCAPTCHA script.");
-      onError?.();
-    };
-
-    document.head.appendChild(script);
+    if (needNewScript && !document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = `https://www.google.com/recaptcha/api.js?onload=onGoogleRecaptchaLoad&render=explicit&hl=${resolvedHl}`;
+      script.async = true;
+      script.defer = true;
+      script.onerror = () => {
+        console.error("Failed to load Google reCAPTCHA script.");
+        callbacksRef.current.onError?.();
+      };
+      document.head.appendChild(script);
+    } else {
+      onScriptReady();
+    }
 
     return () => {
-      // Cleanup widget ID ref on unmount
-      widgetIdRef.current = null;
+      isMounted = false;
     };
-  }, [resolvedSiteKey, resolvedHl, renderWidget, onError]);
+  }, [resolvedSiteKey, resolvedHl]);
 
   return (
     <div className={`space-y-1.5 ${className}`}>

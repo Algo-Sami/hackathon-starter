@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, AlertCircle, MailCheck } from "lucide-react";
 import { registerAction } from "@/app/actions/auth";
@@ -30,6 +30,19 @@ export function RegisterForm() {
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
 
   const recaptchaRef = useRef<GoogleRecaptchaRef>(null);
+
+  const handleCaptchaVerify = useCallback((token: string) => {
+    setRecaptchaToken(token);
+    setCaptchaError(null);
+  }, []);
+
+  const handleCaptchaExpire = useCallback(() => {
+    setRecaptchaToken("");
+  }, []);
+
+  const handleCaptchaError = useCallback(() => {
+    setRecaptchaToken("");
+  }, []);
 
   const validate = (): boolean => {
     const errs: {
@@ -315,16 +328,9 @@ export function RegisterForm() {
       {/* Google reCAPTCHA v2 Component */}
       <GoogleRecaptcha
         ref={recaptchaRef}
-        onVerify={(token) => {
-          setRecaptchaToken(token);
-          setCaptchaError(null);
-        }}
-        onExpire={() => {
-          setRecaptchaToken("");
-        }}
-        onError={() => {
-          setRecaptchaToken("");
-        }}
+        onVerify={handleCaptchaVerify}
+        onExpire={handleCaptchaExpire}
+        onError={handleCaptchaError}
         errorMessage={captchaError || undefined}
       />
 
