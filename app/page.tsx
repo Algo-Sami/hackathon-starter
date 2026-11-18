@@ -46,10 +46,10 @@ export default function LandingHomePage() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href="/dashboard"
+              href="/register"
               className="w-full sm:w-auto h-11 px-7 inline-flex items-center justify-center text-sm font-semibold text-white bg-primary hover:bg-primary-hover rounded transition-colors shadow-xs group"
             >
-              <span>Launch Agent Workspace</span>
+              <span>Get Started</span>
               <ArrowRight className="w-4 h-4 ms-2 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 

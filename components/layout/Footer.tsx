@@ -1,12 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Sparkles, CheckCircle2, ShieldCheck, MapPin } from "lucide-react";
 import { siteConfig } from "@/config/site";
 
 const COPYRIGHT_YEAR = 2026;
 
 export function Footer() {
+  const pathname = usePathname();
+
+  // When on dashboard / workspace, remove landing page footer completely
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname === "/plan" ||
+    pathname === "/messages" ||
+    pathname === "/trace"
+  ) {
+    return null;
+  }
 
   return (
     <footer className="w-full bg-background border-t border-border mt-auto">

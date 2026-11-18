@@ -24,9 +24,11 @@ import {
   History,
   FileText,
   Info,
+  LogOut,
 } from "lucide-react";
 import { useEventMind } from "@/components/eventmind/EventMindProvider";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
+import { logoutAction } from "@/app/actions/auth";
 import { EventMindRole } from "@/lib/eventmind/types";
 
 const ALL_ROLES: { role: EventMindRole; desc: string; icon: string }[] = [
@@ -260,6 +262,18 @@ export default function AgentDashboardPage() {
               title="Reset workspace state"
             >
               <RotateCcw className="w-4 h-4" />
+            </button>
+
+            {/* Sign Out */}
+            <button
+              onClick={async () => {
+                await logoutAction();
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 hover:border-red-200 hover:bg-red-50 text-neutral-600 hover:text-red-700 bg-white text-xs font-medium transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>

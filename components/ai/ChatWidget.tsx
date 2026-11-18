@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import {
   MessageSquare,
   X,
@@ -24,6 +25,7 @@ interface Message {
 }
 
 export function ChatWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -160,6 +162,10 @@ export function ChatWidget() {
         return "";
     }
   };
+
+  if (pathname.startsWith("/dashboard")) {
+    return null;
+  }
 
   return (
     <>

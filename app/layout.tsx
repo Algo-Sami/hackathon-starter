@@ -75,9 +75,7 @@ export default function RootLayout({
   );
 }
 
-/** Minimal skeleton shown during SSR streaming of the header */
+/** Minimal fallback during SSR streaming of the header */
 function HeaderFallback() {
-  return (
-    <div className="sticky top-0 z-40 w-full h-16 bg-background border-b border-border" />
-  );
+  return null;
 }

@@ -10,7 +10,6 @@ import {
   CalendarDays,
   MessageSquareText,
   Cpu,
-  ArrowRight,
   Home,
   MessageSquare,
 } from "lucide-react";
@@ -33,6 +32,11 @@ export function Header({ user }: HeaderProps) {
     pathname === "/plan" ||
     pathname === "/messages" ||
     pathname === "/trace";
+
+  // When on dashboard / workspace, remove landing page header completely
+  if (isWorkspace) {
+    return null;
+  }
 
   // Public Landing links
   const publicLinks = [
@@ -126,17 +130,6 @@ export function Header({ user }: HeaderProps) {
           {/* Functional Language Switcher */}
           <LanguageSwitcher />
 
-          {/* CTA: If on landing page, show Launch Workspace button */}
-          {!isWorkspace && (
-            <Link
-              href="/dashboard"
-              className="h-9 px-4 inline-flex items-center justify-center text-xs sm:text-sm font-semibold text-white bg-primary hover:bg-primary-hover rounded transition-colors shadow-xs gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Agent Workspace</span>
-            </Link>
-          )}
-
           {/* Logged-in: avatar dropdown | Logged-out: login + sign up */}
           {user ? (
             <UserDropdown
@@ -206,14 +199,6 @@ export function Header({ user }: HeaderProps) {
                     {link.label}
                   </Link>
                 ))}
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 text-base font-semibold text-primary bg-primary-light rounded flex items-center justify-between"
-                >
-                  <span>Launch Agent Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
               </>
             ) : (
               <>
