@@ -15,7 +15,7 @@ export async function loginAction(
 ): Promise<AuthActionResult> {
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
-  const next = (formData.get("next") as string) || "/";
+  const next = (formData.get("next") as string) || "/dashboard";
   const recaptchaToken = (
     formData.get("recaptchaToken") || formData.get("g-recaptcha-response")
   ) as string;
@@ -67,6 +67,7 @@ export async function registerAction(
   formData: FormData
 ): Promise<AuthActionResult> {
   const fullName = (formData.get("fullName") as string)?.trim();
+  const role = (formData.get("role") as string)?.trim() || "Event Organizer";
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
@@ -109,6 +110,7 @@ export async function registerAction(
     options: {
       data: {
         full_name: fullName,
+        role: role,
       },
     },
   });
@@ -133,7 +135,7 @@ export async function registerAction(
   // Check whether email confirmation is required or user was auto-confirmed
   // If session is created, user is immediately logged in
   if (data.session) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   // If user exists but identities is empty, email is already registered

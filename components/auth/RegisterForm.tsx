@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, AlertCircle, MailCheck } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, MailCheck, ShieldCheck } from "lucide-react";
 import { registerAction } from "@/app/actions/auth";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import {
@@ -10,11 +10,22 @@ import {
   type GoogleRecaptchaRef,
 } from "@/components/auth/GoogleRecaptcha";
 import { useTranslation } from "@/components/providers/LanguageProvider";
+import { EventMindRole } from "@/lib/eventmind/types";
+
+const ROLE_OPTIONS: EventMindRole[] = [
+  "Dean",
+  "Venue Manager",
+  "Catering Person",
+  "Finance Person",
+  "Judging Coordinator",
+  "Event Organizer",
+];
 
 export function RegisterForm() {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<EventMindRole>("Event Organizer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -94,8 +105,14 @@ export function RegisterForm() {
     if (!validate()) return;
 
     setIsSubmitting(true);
+    try {
+      localStorage.setItem("eventmind_user_role", role);
+    } catch {
+      // Ignore quota error
+    }
     const formData = new FormData();
     formData.append("fullName", fullName);
+    formData.append("role", role);
     formData.append("email", email);
     formData.append("password", password);
     formData.append("confirmPassword", confirmPassword);
@@ -190,6 +207,35 @@ export function RegisterForm() {
             {fieldErrors.fullName}
           </p>
         )}
+      </div>
+
+      {/* Role Selection */}
+      <div>
+        <label
+          htmlFor="register-role"
+          className="block text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5 flex items-center justify-between"
+        >
+          <span>Select Your Role</span>
+          <span className="text-[10px] text-primary font-normal flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3" /> EventMind Access
+          </span>
+        </label>
+        <select
+          id="register-role"
+          name="role"
+          value={role}
+          onChange={(e) => setRole(e.target.value as EventMindRole)}
+          className="w-full text-sm bg-surface border border-border rounded px-3.5 py-2 text-foreground transition-colors focus:bg-background focus:outline-none focus:border-primary cursor-pointer"
+        >
+          {ROLE_OPTIONS.map((opt) => (
+            <option key={opt} value={opt} className="bg-background text-foreground">
+              {opt}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-[11px] text-muted">
+          Your role configures your personalized workspace permissions & alerts.
+        </p>
       </div>
 
       {/* Email */}

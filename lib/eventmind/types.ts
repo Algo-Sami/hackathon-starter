@@ -3,6 +3,27 @@
  * Aligned with PRD.md Section 1.0 & Section 9.0 (Five required planning areas)
  */
 
+export type EventMindRole =
+  | "Dean"
+  | "Venue Manager"
+  | "Catering Person"
+  | "Finance Person"
+  | "Judging Coordinator"
+  | "Event Organizer";
+
+export interface PlanUpdateEvent {
+  id: string;
+  timestamp: string;
+  submittedBy: string;
+  role: EventMindRole;
+  section: "Venue" | "Catering" | "Budget" | "Schedule" | "Judging" | "General";
+  rawMessage: string;
+  previousValue?: string;
+  newValue?: string;
+  aiAction: string;
+  status: "Accepted" | "Rejected" | "Needs Clarification";
+}
+
 export type AreaTag = "reading" | "venue" | "schedule" | "food" | "judging" | "budget";
 
 export type MessageClassification =
@@ -156,6 +177,8 @@ export interface EventPlanState {
   lastUpdated: string;
   version: number;
   isValid: boolean;
+  currentUserRole: EventMindRole;
+  currentUserName: string;
   venue: VenuePlan;
   schedule: SchedulePlan;
   food: FoodPlan;
@@ -164,5 +187,13 @@ export interface EventPlanState {
   validations: PlanValidationCheck[];
   messages: EventMessage[];
   traces: ModelCallTrace[];
+  updateHistory: PlanUpdateEvent[];
+  notifications: Array<{
+    id: string;
+    timestamp: string;
+    message: string;
+    targetRoles: EventMindRole[];
+    read?: boolean;
+  }>;
   totalTokensUsed: number;
 }

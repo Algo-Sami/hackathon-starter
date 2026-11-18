@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   Sparkles,
   CheckCircle2,
-  Upload,
+  XCircle,
+  AlertCircle,
   RotateCcw,
   Download,
   Building2,
@@ -13,33 +14,73 @@ import {
   UtensilsCrossed,
   Gavel,
   Wallet,
-  ShieldCheck,
-  Cpu,
-  CornerDownLeft,
-  MessageSquare,
-  Calendar,
+  Send,
   Mic,
+  MicOff,
+  Paperclip,
   Home,
+  ChevronDown,
+  Layers,
+  History,
+  FileText,
+  Info,
 } from "lucide-react";
 import { useEventMind } from "@/components/eventmind/EventMindProvider";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
+import { EventMindRole } from "@/lib/eventmind/types";
+
+const ALL_ROLES: { role: EventMindRole; desc: string; icon: string }[] = [
+  { role: "Event Organizer", desc: "Overall event execution & tracking", icon: "📋" },
+  { role: "Catering Person", desc: "Food headcount, menu & catering rates", icon: "🍱" },
+  { role: "Finance Person", desc: "Budget caps, bills & expense approvals", icon: "💰" },
+  { role: "Venue Manager", desc: "Hall bookings, seats & AV logistics", icon: "🏛️" },
+  { role: "Judging Coordinator", desc: "Evaluation slots, judges & scoring", icon: "⚖️" },
+  { role: "Dean", desc: "Institutional directives & budget ceilings", icon: "🎓" },
+];
+
+const ROLE_PROMPT_SUGGESTIONS: Record<EventMindRole, string[]> = {
+  "Catering Person": [
+    "Salam, standard lunch price has increased from Rs 1000 to Rs 1200 per person.",
+    "Bhai 100 boxes mangwa lo kafi hongay bachat ho jaye gi",
+  ],
+  "Finance Person": [
+    "Vendor confirmed flex printing & backdrop banners invoice is Rs 15,000 instead of Rs 10,000.",
+  ],
+  "Venue Manager": [
+    "Pak-China Friendship Centre Hall B is locked in with 220 seats at Rs 180,000 rent.",
+    "Room D is available for Rs 50,000 with 80 seats capacity.",
+  ],
+  "Judging Coordinator": [
+    "Dr. Tariq will arrive 10 minutes late due to motorway traffic. Can we adjust his slot?",
+  ],
+  Dean: [
+    "Approved total budget ceiling Rs 650,000. Ensure strict 15-minute Asr prayer break in schedule.",
+  ],
+  "Event Organizer": [
+    "Can we add a DJ sound setup for Rs 30,000 during opening ceremony?",
+    "Review latest budget status and check if all 177 meals are secured.",
+  ],
+};
 
 export default function AgentDashboardPage() {
   const {
     state,
+    currentUserRole,
+    setCurrentUserRole,
     submitNewMessage,
     uploadMessagePack,
     resetWorkspace,
     exportPlanAsText,
-    exportTraceAsJson,
+    exportPlanAsJson,
     isProcessing,
   } = useEventMind();
 
-  const [activeView, setActiveView] = useState<"chat" | "plan" | "trace">("chat");
+  const [activeTab, setActiveTab] = useState<"assistant" | "plan" | "updates">("assistant");
   const [inputMessage, setInputMessage] = useState("");
-  const [senderName, setSenderName] = useState("");
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -59,740 +100,660 @@ export default function AgentDashboardPage() {
   };
 
   useEffect(() => {
-    if (activeView === "chat") {
-      scrollToBottom();
-    }
-  }, [state.messages.length, activeView]);
+    scrollToBottom();
+  }, [state.messages]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputMessage.trim() || isProcessing) return;
+    if (!inputMessage.trim() && !selectedFile) return;
 
-    const textToSend = inputMessage.trim();
-    const sender = senderName.trim() || "Event Organizer";
-    setInputMessage("");
-    await submitNewMessage(textToSend, sender);
-  };
-
-  const handleQuickPrompt = (prompt: string, sender = "Event Contributor") => {
-    setInputMessage(prompt);
-    setSenderName(sender);
-  };
-
-  const handleFileUpload = (file: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      if (content) {
-        await uploadMessagePack(content, file.name);
-        setShowUploadModal(false);
+    if (selectedFile) {
+      try {
+        const text = await selectedFile.text();
+        await uploadMessagePack(text, selectedFile.name);
+        setSelectedFile(null);
+      } catch {
+        // Fallback
       }
-    };
-    reader.readAsText(file);
+    }
+
+    if (inputMessage.trim()) {
+      const text = inputMessage.trim();
+      setInputMessage("");
+      await submitNewMessage(text, undefined, currentUserRole);
+    }
   };
+
+  const handleRoleSelect = (role: EventMindRole) => {
+    setCurrentUserRole(role);
+    setShowRoleMenu(false);
+  };
+
+  const currentRoleObj =
+    ALL_ROLES.find((r) => r.role === currentUserRole) || ALL_ROLES[0];
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] bg-background">
-      {/* ── LEFT SIDEBAR (Event Context & Navigation) ─────────────────────────── */}
-      <aside className="w-full lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-e border-border bg-surface/40 p-4 flex flex-col justify-between shrink-0">
-        <div className="space-y-4">
-          {/* Workspace Title & Badge */}
-          <div className="p-3 bg-background border border-border rounded shadow-2xs space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary-light px-2 py-0.5 rounded border border-primary-accent/30">
-                ACTIVE WORKSPACE
-              </span>
-              <span className="text-[10px] text-muted font-mono">v{state.version}.0</span>
-            </div>
-            <h2 className="text-sm font-bold text-foreground leading-snug">
-              {state.eventName}
-            </h2>
-            <p className="text-[11px] text-muted">
-              Islamabad • 150 Students (50 Teams) • 4.0 Hours
-            </p>
-          </div>
-
-          {/* Key Metrics Quick Box */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2.5 bg-background border border-border rounded">
-              <span className="text-[10px] text-muted block">Plan Validity</span>
-              <span className="font-bold text-emerald-600 flex items-center gap-1 text-xs mt-0.5">
-                <CheckCircle2 className="w-3.5 h-3.5" /> VALID
-              </span>
-            </div>
-            <div className="p-2.5 bg-background border border-border rounded">
-              <span className="text-[10px] text-muted block">Committed Budget</span>
-              <span className="font-bold text-foreground font-mono text-xs mt-0.5">
-                Rs {state.budget.totalCommitted.toLocaleString()}
-              </span>
-            </div>
-            <div className="p-2.5 bg-background border border-border rounded">
-              <span className="text-[10px] text-muted block">Total Headcount</span>
-              <span className="font-bold text-foreground text-xs mt-0.5">
-                177 Meals
-              </span>
-            </div>
-            <div className="p-2.5 bg-background border border-border rounded">
-              <span className="text-[10px] text-muted block">Remaining Buffer</span>
-              <span className="font-bold text-emerald-700 font-mono text-xs mt-0.5">
-                Rs {state.budget.remainingBalance.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* Five Areas Mini-Directory */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-muted uppercase tracking-wider px-1">
-              Five Required Planning Areas
-            </span>
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setActiveView("plan")}
-                className="w-full p-2 text-xs rounded hover:bg-background border border-transparent hover:border-border flex items-center justify-between text-start transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-foreground">1. Venue</span>
-                </div>
-                <span className="text-[11px] text-muted font-mono">{state.venue.capacity} seats</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView("plan")}
-                className="w-full p-2 text-xs rounded hover:bg-background border border-transparent hover:border-border flex items-center justify-between text-start transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-foreground">2. Schedule</span>
-                </div>
-                <span className="text-[11px] text-muted font-mono">{state.schedule.totalDurationHours} hrs</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView("plan")}
-                className="w-full p-2 text-xs rounded hover:bg-background border border-transparent hover:border-border flex items-center justify-between text-start transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <UtensilsCrossed className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-foreground">3. Food</span>
-                </div>
-                <span className="text-[11px] text-emerald-700 font-medium">177 / 177</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView("plan")}
-                className="w-full p-2 text-xs rounded hover:bg-background border border-transparent hover:border-border flex items-center justify-between text-start transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Gavel className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-foreground">4. Judging</span>
-                </div>
-                <span className="text-[11px] text-muted font-mono">17 judges</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveView("plan")}
-                className="w-full p-2 text-xs rounded hover:bg-background border border-transparent hover:border-border flex items-center justify-between text-start transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Wallet className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-medium text-foreground">5. Budget</span>
-                </div>
-                <span className="text-[11px] text-emerald-700 font-mono">Rs 650k max</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Controls & Footer */}
-        <div className="space-y-2 pt-4 border-t border-border mt-4">
-          <button
-            type="button"
-            onClick={() => setShowUploadModal(true)}
-            className="w-full py-2 px-3 text-xs font-medium text-foreground bg-background hover:bg-surface border border-border rounded flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
-          >
-            <Upload className="w-3.5 h-3.5 text-primary" />
-            <span>Upload Message Pack (.txt)</span>
-          </button>
-
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={exportPlanAsText}
-              className="py-1.5 px-2 text-[11px] font-medium text-foreground bg-background hover:bg-surface border border-border rounded flex items-center justify-center gap-1 transition-colors"
+    <div className="min-h-screen bg-[#FDFBF7] text-neutral-900 flex flex-col font-sans">
+      {/* ── TOP NAVIGATION BAR ── */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-200 px-4 sm:px-6 py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Left: Brand & Home */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-xs font-medium text-neutral-600 hover:text-emerald-700 transition-colors p-1.5 rounded-lg hover:bg-neutral-100"
+              title="Return to Public Landing Page"
             >
-              <Download className="w-3 h-3 text-primary" />
-              <span>Plan (.txt)</span>
-            </button>
-            <button
-              type="button"
-              onClick={exportTraceAsJson}
-              className="py-1.5 px-2 text-[11px] font-medium text-foreground bg-background hover:bg-surface border border-border rounded flex items-center justify-center gap-1 transition-colors"
-            >
-              <Cpu className="w-3 h-3 text-primary" />
-              <span>Trace (.json)</span>
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between pt-2 text-[11px] text-muted">
-            <button
-              type="button"
-              onClick={resetWorkspace}
-              className="text-muted hover:text-foreground flex items-center gap-1 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset State</span>
-            </button>
-
-            <Link href="/" className="hover:text-primary flex items-center gap-1 transition-colors">
-              <Home className="w-3 h-3" />
-              <span>Public Site</span>
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">Landing Page</span>
             </Link>
-          </div>
-        </div>
-      </aside>
 
-      {/* ── CENTER STAGE (ChatGPT-style Interface) ────────────────────────────── */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Top Header Mode Toggle Bar */}
-        <div className="h-14 border-b border-border bg-background/80 px-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-primary flex items-center justify-center text-white">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold text-foreground leading-none">
-                EventMind AI Agent
-              </h1>
-              <span className="text-[10px] text-muted">
-                Multi-sender reasoning & conflict detection engine
-              </span>
-            </div>
-          </div>
+            <div className="h-4 w-px bg-neutral-200" />
 
-          {/* Mode Switcher Pills */}
-          <div className="flex items-center p-0.5 bg-surface border border-border rounded">
-            <button
-              type="button"
-              onClick={() => setActiveView("chat")}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                activeView === "chat"
-                  ? "bg-primary text-white shadow-2xs font-semibold"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Agent Chat</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveView("plan")}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                activeView === "plan"
-                  ? "bg-primary text-white shadow-2xs font-semibold"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>5-Area Plan</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveView("trace")}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                activeView === "trace"
-                  ? "bg-primary text-white shadow-2xs font-semibold"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>AI Trace</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ── VIEW 1: CHATGPT-STYLE CONVERSATION STREAM ─────────────────────── */}
-        {activeView === "chat" && (
-          <div className="flex-1 flex flex-col justify-between overflow-hidden">
-            {/* Scrollable Conversation Stream */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-4xl w-full mx-auto">
-              {/* Agent Intro Greeting Card */}
-              <div className="p-4 rounded-lg bg-surface/60 border border-border text-xs space-y-2">
-                <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Welcome to EventMind AI Workspace</span>
-                </div>
-                <p className="text-muted leading-relaxed">
-                  I have analyzed the current message pack for the{" "}
-                  <strong className="text-foreground">Physical Hackathon in Islamabad</strong>. All 5 areas are
-                  planned and verified under the approved budget ceiling of Rs 650,000. You can submit updates,
-                  proposals, or questions in English or Roman Urdu below.
-                </p>
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="text-[10px] bg-background px-2 py-0.5 rounded border border-border text-muted">
-                    Venue: Hall B (220 seats)
-                  </span>
-                  <span className="text-[10px] bg-background px-2 py-0.5 rounded border border-border text-muted">
-                    Schedule: 4.0 Hours (Prayer break included)
-                  </span>
-                  <span className="text-[10px] bg-background px-2 py-0.5 rounded border border-border text-muted">
-                    Food: 177 meals
-                  </span>
-                  <span className="text-[10px] bg-background px-2 py-0.5 rounded border border-border text-muted">
-                    Budget Committed: Rs 400,050
-                  </span>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                E
               </div>
-
-              {/* Chronological Messages / Interaction Feed */}
-              {state.messages.map((msg) => (
-                <div key={msg.id} className="space-y-2">
-                  {/* Stakeholder Incoming Message (User Bubble Style) */}
-                  <div className="flex justify-end">
-                    <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-tr-xs bg-surface border border-border p-3 text-xs space-y-1">
-                      <div className="flex items-center justify-between gap-2 text-[10px] text-muted">
-                        <span className="font-semibold text-foreground">{msg.sender}</span>
-                        <span>{msg.timestamp}</span>
-                      </div>
-                      <p className="font-mono text-foreground text-xs leading-relaxed">
-                        &quot;{msg.rawText}&quot;
-                      </p>
-                      {msg.language === "roman_ur" && (
-                        <span className="inline-block text-[9px] px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                          Roman Urdu Message
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Agent Response Bubble (ChatGPT Style) */}
-                  <div className="flex justify-start">
-                    <div
-                      className={`max-w-[90%] sm:max-w-[80%] rounded-2xl rounded-tl-xs p-3.5 text-xs space-y-2 border ${
-                        msg.decisionStatus === "rejected"
-                          ? "bg-rose-50/50 border-rose-200"
-                          : msg.decisionStatus === "accepted"
-                          ? "bg-background border-border shadow-2xs"
-                          : "bg-amber-50/50 border-amber-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-bold text-foreground">
-                          <Sparkles className="w-3.5 h-3.5 text-primary" />
-                          <span>EventMind Decision Engine</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {msg.affectedAreas.map((area) => (
-                            <span
-                              key={area}
-                              className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded bg-surface border border-border text-muted"
-                            >
-                              {area}
-                            </span>
-                          ))}
-                          <span
-                            className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${
-                              msg.decisionStatus === "accepted"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                                : msg.decisionStatus === "rejected"
-                                ? "bg-rose-100 text-rose-800 border-rose-300"
-                                : "bg-amber-100 text-amber-800 border-amber-300"
-                            }`}
-                          >
-                            {msg.decisionStatus}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p
-                        className={`leading-relaxed ${
-                          msg.decisionStatus === "rejected"
-                            ? "text-rose-900 font-medium"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {msg.decisionReason}
-                      </p>
-
-                      {msg.decisionStatus === "rejected" && (
-                        <div className="p-2 rounded bg-rose-100/60 border border-rose-200 text-[11px] text-rose-800 flex items-center gap-1.5">
-                          <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                          <span>Safety Guard: The last valid plan was strictly preserved.</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-sm tracking-tight text-neutral-900">
+                    EventMind AI
+                  </span>
+                  <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded">
+                    Centralized
+                  </span>
                 </div>
-              ))}
-
-              {isProcessing && (
-                <div className="flex items-center gap-2 text-xs text-muted p-2">
-                  <Sparkles className="w-4 h-4 text-primary animate-spin" />
-                  <span>EventMind AI is analyzing constraints and recalculating dependencies...</span>
-                </div>
-              )}
-
-              <div ref={chatBottomRef} />
+                <p className="text-[10px] text-neutral-500 leading-none">
+                  {state.eventName}
+                </p>
+              </div>
             </div>
+          </div>
 
-            {/* Bottom ChatGPT Sticky Input Container */}
-            <div className="border-t border-border bg-background p-3 sm:p-4 shrink-0">
-              <div className="max-w-4xl mx-auto space-y-2.5">
-                {/* Prompt Suggestion Chips */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-                  <span className="text-[10px] text-muted shrink-0">Try test prompt:</span>
-                  {[
-                    {
-                      label: "Bhai 100 boxes mangwa lo (Food Rejection)",
-                      text: "Bhai 100 boxes mangwa lo kafi hongay bachat ho jaye gi",
-                      sender: "Team Assistant",
-                    },
-                    {
-                      label: "Printing cost increased to Rs 15,000",
-                      text: "Printing vendor saying flex and badges cost Rs 15,000 instead of 10,000",
-                      sender: "Printing Vendor",
-                    },
-                    {
-                      label: "Dr. Tariq 10 mins late",
-                      text: "Judge Dr. Tariq will be 10 minutes late due to traffic",
-                      sender: "Judge Coordinator",
-                    },
-                    {
-                      label: "Can we hire a DJ for Rs 35,000?",
-                      text: "Can we hire a DJ for music during coding? Quotation is Rs 35,000",
-                      sender: "Student Council",
-                    },
-                  ].map((chip, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleQuickPrompt(chip.text, chip.sender)}
-                      className="px-2.5 py-1 rounded-full text-[11px] bg-surface hover:bg-surface/80 border border-border text-foreground whitespace-nowrap transition-colors"
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
+          {/* Center: ROLE SWITCHER DROPDOWN */}
+          <div className="relative">
+            <button
+              onClick={() => setShowRoleMenu(!showRoleMenu)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-300 text-emerald-900 text-xs font-semibold shadow-xs transition-colors"
+            >
+              <span className="text-base">{currentRoleObj.icon}</span>
+              <span className="hidden md:inline text-neutral-500 font-normal">Active Role:</span>
+              <span className="font-semibold text-emerald-800">{currentUserRole}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-emerald-700" />
+            </button>
+
+            {showRoleMenu && (
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-0 w-72 bg-white rounded-xl shadow-xl border border-neutral-200 py-1.5 z-50 text-xs">
+                <div className="px-3 py-1.5 border-b border-neutral-100 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                  Switch Active Role (Demo Mode)
                 </div>
-
-                {/* ChatGPT-style Prompt Input Bar */}
-                <form
-                  onSubmit={handleSendMessage}
-                  className="flex items-center gap-2 bg-surface border border-border rounded-xl p-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 shadow-xs"
-                >
-                  {/* File Upload Button */}
+                {ALL_ROLES.map((item) => (
                   <button
-                    type="button"
-                    onClick={() => setShowUploadModal(true)}
-                    title="Upload .txt message pack"
-                    className="p-2 text-muted hover:text-foreground rounded-lg hover:bg-background transition-colors"
-                  >
-                    <Upload className="w-4 h-4" />
-                  </button>
-
-                  {/* Text Input */}
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Message EventMind AI in English or Roman Urdu..."
-                    className="flex-1 bg-transparent px-2 text-xs sm:text-sm text-foreground focus:outline-none"
-                  />
-
-                  {/* Voice Mic Button (Groq Whisper STT) */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (sttState === "recording") {
-                        stopRecording();
-                      } else {
-                        startRecording();
-                      }
-                    }}
-                    title={sttState === "recording" ? "Stop recording" : "Record voice (Groq STT)"}
-                    className={`p-2 rounded-lg transition-colors ${
-                      sttState === "recording"
-                        ? "bg-rose-100 text-rose-700 animate-pulse"
-                        : "text-muted hover:text-foreground hover:bg-background"
+                    key={item.role}
+                    onClick={() => handleRoleSelect(item.role)}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2.5 transition-colors ${
+                      item.role === currentUserRole
+                        ? "bg-emerald-50 text-emerald-900 font-semibold"
+                        : "hover:bg-neutral-50 text-neutral-700"
                     }`}
                   >
-                    <Mic className="w-4 h-4" />
+                    <span className="text-lg">{item.icon}</span>
+                    <div className="flex-1">
+                      <div className="text-xs">{item.role}</div>
+                      <div className="text-[10px] text-neutral-400 font-normal">{item.desc}</div>
+                    </div>
+                    {item.role === currentUserRole && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    )}
                   </button>
-
-                  {/* Send Button */}
-                  <button
-                    type="submit"
-                    disabled={!inputMessage.trim() || isProcessing}
-                    className="h-8 px-3 text-xs font-semibold text-white bg-primary hover:bg-primary-hover disabled:opacity-40 rounded-lg flex items-center gap-1 transition-colors"
-                  >
-                    <span>Send</span>
-                    <CornerDownLeft className="w-3 h-3" />
-                  </button>
-                </form>
-
-                <p className="text-[10px] text-center text-muted">
-                  EventMind AI uses AI to interpret natural language while deterministic code performs calculations and constraint checks.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── VIEW 2: FIVE-AREA PLAN VIEW ───────────────────────────────────── */}
-        {activeView === "plan" && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-5xl w-full mx-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div>
-                <h2 className="text-base font-bold text-foreground">Five-Area Verified Event Plan</h2>
-                <p className="text-xs text-muted">
-                  Islamabad Physical Hackathon • 150 Students (50 Teams) • Budget: Rs 650,000
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={exportPlanAsText}
-                  className="px-3 py-1.5 text-xs font-medium text-foreground bg-surface border border-border rounded flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-primary" />
-                  <span>Download (.txt)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 1. Venue */}
-            <div className="p-4 rounded-lg bg-surface/30 border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-primary" />
-                  <span>1. Venue Plan</span>
-                </h3>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  {state.venue.status}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-2.5 bg-background rounded border border-border">
-                  <span className="text-muted block text-[11px]">Selected Hall</span>
-                  <strong className="text-foreground">{state.venue.name}</strong>
-                </div>
-                <div className="p-2.5 bg-background rounded border border-border">
-                  <span className="text-muted block text-[11px]">Capacity / Attendance</span>
-                  <strong className="text-foreground">{state.venue.capacity} seats ({state.venue.expectedAttendance} attendees)</strong>
-                </div>
-                <div className="p-2.5 bg-background rounded border border-border">
-                  <span className="text-muted block text-[11px]">Rental Cost</span>
-                  <strong className="text-foreground">Rs {state.venue.cost.toLocaleString()}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Schedule */}
-            <div className="p-4 rounded-lg bg-surface/30 border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  <span>2. Schedule (4.0 Hours Strict)</span>
-                </h3>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  {state.schedule.eventStartTime} – {state.schedule.eventEndTime}
-                </span>
-              </div>
-              <div className="divide-y divide-border text-xs">
-                {state.schedule.activities.map((act) => (
-                  <div key={act.id} className="py-2 flex items-center justify-between gap-3">
-                    <span className="font-mono text-primary font-bold w-24 shrink-0">{act.startTime} - {act.endTime}</span>
-                    <span className="flex-1 font-medium text-foreground">{act.title}</span>
-                    <span className="text-muted text-[11px] font-mono">{act.durationMinutes} min</span>
-                  </div>
                 ))}
               </div>
-            </div>
-
-            {/* 3. Food */}
-            <div className="p-4 rounded-lg bg-surface/30 border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <UtensilsCrossed className="w-4 h-4 text-primary" />
-                  <span>3. Food & Catering Plan</span>
-                </h3>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  {state.food.headcount} Meals Verified
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                Menu: {state.food.itemDescription} @ Rs {state.food.unitPrice}/box + Rs {state.food.deliveryCharges} delivery ={" "}
-                <strong className="text-foreground">Rs {state.food.totalCost.toLocaleString()}</strong>
-              </p>
-            </div>
-
-            {/* 4. Judging */}
-            <div className="p-4 rounded-lg bg-surface/30 border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Gavel className="w-4 h-4 text-primary" />
-                  <span>4. Judging Allocation</span>
-                </h3>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  Feasible Ratio
-                </span>
-              </div>
-              <p className="text-xs text-muted">
-                50 Teams evaluated by 17 Judges (~{state.judging.teamsPerJudge} teams/judge, {state.judging.minutesPerTeam} mins/team).
-              </p>
-            </div>
-
-            {/* 5. Budget */}
-            <div className="p-4 rounded-lg bg-surface/30 border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-primary" />
-                  <span>5. Budget Plan (PKR)</span>
-                </h3>
-                <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  Rs 650,000 Ceiling
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-2 bg-background rounded border border-border">
-                  <span className="text-[10px] text-muted block">Approved</span>
-                  <strong>Rs {state.budget.approvedTotal.toLocaleString()}</strong>
-                </div>
-                <div className="p-2 bg-background rounded border border-border">
-                  <span className="text-[10px] text-muted block">Committed</span>
-                  <strong>Rs {state.budget.totalCommitted.toLocaleString()}</strong>
-                </div>
-                <div className="p-2 bg-background rounded border border-border">
-                  <span className="text-[10px] text-muted block">Planned</span>
-                  <strong>Rs {state.budget.totalPlanned.toLocaleString()}</strong>
-                </div>
-                <div className="p-2 bg-emerald-50 text-emerald-800 rounded border border-emerald-200">
-                  <span className="text-[10px] block font-medium">Remaining</span>
-                  <strong>Rs {state.budget.remainingBalance.toLocaleString()}</strong>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        )}
 
-        {/* ── VIEW 3: AI MODEL TRACE VIEW ───────────────────────────────────── */}
-        {activeView === "trace" && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-4xl w-full mx-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
+            {/* Export Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 text-xs font-medium text-neutral-700 bg-white shadow-xs transition-colors"
+                title="Export centralized plan"
+              >
+                <Download className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="hidden md:inline">Export</span>
+                <ChevronDown className="w-3 h-3 text-neutral-400" />
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50 text-xs">
+                  <button
+                    onClick={() => {
+                      exportPlanAsText();
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-neutral-50 text-neutral-700 flex items-center gap-2"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-neutral-500" /> Plan Summary (.txt)
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportPlanAsJson();
+                      setShowExportMenu(false);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-neutral-50 text-neutral-700 flex items-center gap-2"
+                  >
+                    <Download className="w-3.5 h-3.5 text-neutral-500" /> Full State (.json)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Reset Workspace */}
+            <button
+              onClick={() => {
+                if (confirm("Reset workspace to initial hackathon baseline?")) {
+                  resetWorkspace();
+                }
+              }}
+              className="p-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 text-neutral-600 hover:text-neutral-900 bg-white transition-colors"
+              title="Reset workspace state"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* NAVIGATION TABS (Mobile / Quick Switcher) */}
+        <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-neutral-100 flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab("assistant")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "assistant"
+                ? "bg-emerald-700 text-white shadow-xs"
+                : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Section 1: AI Assistant</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("plan")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "plan"
+                ? "bg-emerald-700 text-white shadow-xs"
+                : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Section 2: Shared Event Plan</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("updates")}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "updates"
+                ? "bg-emerald-700 text-white shadow-xs"
+                : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Section 3: Latest Updates</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-200 text-neutral-700">
+              {state.updateHistory.length}
+            </span>
+          </button>
+        </div>
+      </header>
+
+      {/* ── MAIN WORKSPACE CONTENT ── */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ══════════════════════════════════════════════════════════════════════
+            SECTION 1: AI ASSISTANT (Chatbot Interface)
+        ══════════════════════════════════════════════════════════════════════ */}
+        <div
+          className={`lg:col-span-7 flex flex-col bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden h-[calc(100vh-150px)] min-h-[580px] ${
+            activeTab !== "assistant" ? "hidden lg:flex" : "flex"
+          }`}
+        >
+          {/* Chat Header */}
+          <div className="px-5 py-3.5 bg-neutral-50/80 border-b border-neutral-200 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
+                🤖
+              </div>
               <div>
-                <h2 className="text-base font-bold text-foreground">Truthful AI Model-Call Trace</h2>
-                <p className="text-xs text-muted">
-                  Total Calls: {state.traces.length} • Total Tokens: {state.totalTokensUsed.toLocaleString()}
+                <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+                  <span>EventMind AI Assistant</span>
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </h2>
+                <p className="text-[11px] text-neutral-500">
+                  Role: <span className="font-medium text-neutral-800">{currentUserRole}</span> • Updates sync directly to the shared plan
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={exportTraceAsJson}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Trace (.json)</span>
-              </button>
             </div>
 
-            <div className="space-y-3">
-              {state.traces.map((tr) => (
-                <div key={tr.id} className="p-3.5 rounded border border-border bg-surface/30 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-primary">
-                      Call #{tr.sequence} [{tr.areaTag}]
-                    </span>
-                    <span className="font-mono text-muted text-[11px]">{tr.model}</span>
-                  </div>
-                  <div className="text-[11px] text-muted flex gap-3 font-mono">
-                    <span>Prompt: {tr.promptTokens}</span>
-                    <span>Completion: {tr.completionTokens}</span>
-                    <span className="text-primary font-bold">Total: {tr.totalTokens}</span>
-                    <span>{tr.latencyMs} ms</span>
-                  </div>
-                  <pre className="p-2 rounded bg-background border border-border text-[11px] font-mono whitespace-pre-wrap max-h-24 overflow-hidden">
-                    {tr.outputResponse}
-                  </pre>
-                </div>
-              ))}
+            <div className="text-[11px] text-neutral-500 bg-white border border-neutral-200 px-2.5 py-1 rounded-full shadow-2xs">
+              Plan v{state.version} • {state.lastUpdated}
             </div>
           </div>
-        )}
-      </main>
 
-      {/* ── File Upload Modal ────────────────────────────────────────────────── */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-150">
-          <div className="bg-background border border-border rounded p-6 max-w-md w-full space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">
-                Upload Initial Message Pack (.txt)
-              </h3>
+          {/* Quick Suggested Chips for Active Role */}
+          <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100 flex items-center gap-2 overflow-x-auto text-[11px]">
+            <span className="text-neutral-400 font-medium whitespace-nowrap">Suggested:</span>
+            {ROLE_PROMPT_SUGGESTIONS[currentUserRole]?.map((prompt, idx) => (
               <button
-                type="button"
-                onClick={() => setShowUploadModal(false)}
-                className="text-muted hover:text-foreground text-sm font-bold"
+                key={idx}
+                onClick={() => setInputMessage(prompt)}
+                className="whitespace-nowrap px-2.5 py-1 bg-white hover:bg-emerald-50 border border-neutral-200 hover:border-emerald-300 text-neutral-700 hover:text-emerald-900 rounded-md transition-colors text-left"
+              >
+                &ldquo;{prompt.length > 55 ? prompt.slice(0, 55) + "…" : prompt}&rdquo;
+              </button>
+            ))}
+          </div>
+
+          {/* Conversation Stream */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+            {state.messages.map((msg) => {
+              const isAi = !msg.sender || msg.sender === "System" || msg.sender === "EventMind AI";
+              const isAccepted = msg.decisionStatus === "accepted";
+              const isRejected = msg.decisionStatus === "rejected";
+
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${isAi ? "items-start" : "items-end"}`}
+                >
+                  {/* Sender Name & Role */}
+                  <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mb-1 px-1">
+                    <span className="font-medium text-neutral-800">
+                      {isAi ? "EventMind AI" : msg.sender}
+                    </span>
+                    {msg.role && (
+                      <span className="bg-neutral-100 text-neutral-600 px-1.5 py-0.2 rounded text-[10px]">
+                        {msg.role}
+                      </span>
+                    )}
+                    <span>•</span>
+                    <span>{msg.timestamp}</span>
+                  </div>
+
+                  {/* Message Bubble */}
+                  <div
+                    className={`max-w-[88%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-xs ${
+                      isAi
+                        ? "bg-neutral-100/80 text-neutral-900 rounded-tl-sm border border-neutral-200/60"
+                        : "bg-emerald-700 text-white rounded-tr-sm"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.rawText}</p>
+                  </div>
+
+                  {/* AI Decision Card (If Applicable) */}
+                  {msg.decisionReason && (
+                    <div
+                      className={`mt-1.5 max-w-[88%] sm:max-w-[80%] rounded-xl p-3 text-[11px] border leading-relaxed flex items-start gap-2 shadow-2xs ${
+                        isRejected
+                          ? "bg-red-50 border-red-200 text-red-900"
+                          : isAccepted
+                          ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                          : "bg-amber-50 border-amber-200 text-amber-950"
+                      }`}
+                    >
+                      {isRejected ? (
+                        <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                      ) : isAccepted ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <div className="font-semibold mb-0.5">
+                          {isRejected
+                            ? "AI Validator: Update Rejected"
+                            : isAccepted
+                            ? "AI Assistant: Update Accepted & Synced"
+                            : "AI Assistant: Review Required"}
+                        </div>
+                        <p>{msg.decisionReason}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* AI Processing Indicator */}
+            {isProcessing && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-neutral-600 w-fit">
+                <Sparkles className="w-4 h-4 text-emerald-600 animate-spin" />
+                <span>EventMind AI is analyzing constraints and recalculating dependencies...</span>
+              </div>
+            )}
+
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Selected File Badge */}
+          {selectedFile && (
+            <div className="px-4 py-2 bg-emerald-50 border-t border-emerald-100 flex items-center justify-between text-xs text-emerald-900">
+              <div className="flex items-center gap-2">
+                <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="font-medium truncate max-w-xs">{selectedFile.name}</span>
+                <span className="text-[10px] text-emerald-600">
+                  ({Math.round(selectedFile.size / 1024)} KB)
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="text-neutral-400 hover:text-neutral-600 text-xs font-bold"
               >
                 ✕
               </button>
             </div>
+          )}
 
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragActive(true);
-              }}
-              onDragLeave={() => setDragActive(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragActive(false);
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                  handleFileUpload(e.dataTransfer.files[0]);
-                }
-              }}
-              className={`border-2 border-dashed rounded p-6 text-center cursor-pointer transition-colors ${
-                dragActive
-                  ? "border-primary bg-primary-light/50"
-                  : "border-border hover:border-primary/50 bg-surface/50"
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-            >
+          {/* Chat Input Bar */}
+          <div className="p-3 bg-white border-t border-neutral-200">
+            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              {/* File Attachment Button */}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".txt"
+                accept=".txt,.json,.csv"
                 className="hidden"
                 onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    handleFileUpload(e.target.files[0]);
-                  }
+                  if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
                 }}
               />
-              <Upload className="w-6 h-6 text-primary mx-auto mb-1.5" />
-              <p className="text-xs font-semibold text-foreground">
-                Click to browse or drop .txt pack
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-lg transition-colors"
+                title="Attach text file or message pack"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+
+              {/* Voice Microphone (Groq Whisper STT) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (sttState === "recording") {
+                    stopRecording();
+                  } else {
+                    startRecording();
+                  }
+                }}
+                disabled={sttState === "transcribing"}
+                className={`p-2 rounded-lg transition-all ${
+                  sttState === "recording"
+                    ? "bg-red-600 text-white animate-pulse"
+                    : sttState === "transcribing"
+                    ? "bg-amber-100 text-amber-800 animate-spin"
+                    : "text-neutral-500 hover:text-emerald-700 hover:bg-emerald-50"
+                }`}
+                title={
+                  sttState === "recording"
+                    ? "Click to stop recording"
+                    : "Speak using Groq Whisper (English or Urdu)"
+                }
+              >
+                {sttState === "recording" ? (
+                  <MicOff className="w-4 h-4" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+              </button>
+
+              {/* Text Input */}
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder={`Type a message as ${currentUserRole} (e.g. "Lunch price increased to 1200")...`}
+                className="flex-1 bg-neutral-100/70 border border-neutral-200 rounded-xl px-3.5 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors"
+              />
+
+              {/* Send Button */}
+              <button
+                type="submit"
+                disabled={(!inputMessage.trim() && !selectedFile) || isProcessing}
+                className="p-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-xl shadow-xs transition-colors"
+                title="Send message to AI assistant"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            RIGHT SIDE: SECTION 2 (Shared Event Plan) & SECTION 3 (Latest Updates)
+        ══════════════════════════════════════════════════════════════════════ */}
+        <div
+          className={`lg:col-span-5 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-150px)] pr-1 ${
+            activeTab === "assistant" ? "hidden lg:flex" : "flex"
+          }`}
+        >
+          {/* ════════════════════════════════════════════════════════════════════
+              SECTION 2 — SHARED EVENT PLAN (Single Source of Truth)
+          ════════════════════════════════════════════════════════════════════ */}
+          <div
+            className={`bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm space-y-4 ${
+              activeTab === "updates" ? "hidden lg:block" : "block"
+            }`}
+          >
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-emerald-700" />
+                <h3 className="font-semibold text-sm text-neutral-900">
+                  Section 2 — Shared Event Plan
+                </h3>
+              </div>
+              <span className="text-[10px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                Single Source of Truth
+              </span>
+            </div>
+
+            {/* Event Overview Box */}
+            <div className="p-3.5 bg-neutral-50 rounded-xl border border-neutral-200/80 text-xs space-y-2">
+              <div className="font-semibold text-neutral-900 flex items-center justify-between">
+                <span>{state.eventName}</span>
+                <span className="text-emerald-700 font-bold">177 Total Attendees</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-neutral-600">
+                <div>📍 Location: {state.location}</div>
+                <div>👥 150 Students (50 Teams)</div>
+                <div>👔 10 Staff Members</div>
+                <div>⚖️ 17 Judges & Mentors</div>
+              </div>
+            </div>
+
+            {/* Area 1: Venue & Capacity */}
+            <div className="border border-neutral-200 rounded-xl p-3.5 space-y-1.5 hover:border-emerald-300 transition-colors">
+              <div className="flex items-center justify-between text-xs font-semibold text-neutral-800">
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Venue & Capacity</span>
+                </div>
+                <span className="text-emerald-800 font-bold">
+                  Rs {state.venue.cost.toLocaleString()}
+                </span>
+              </div>
+              <div className="text-xs text-neutral-900 font-medium">{state.venue.name}</div>
+              <p className="text-[11px] text-neutral-500 leading-snug">
+                Capacity: <strong>{state.venue.capacity} seats</strong> (Need: 177). Room D rejected (capacity 80).
               </p>
             </div>
 
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowUploadModal(false)}
-                className="px-3 py-1.5 text-xs text-muted hover:text-foreground border border-border rounded"
-              >
-                Cancel
-              </button>
+            {/* Area 2: Catering & Food */}
+            <div className="border border-neutral-200 rounded-xl p-3.5 space-y-1.5 hover:border-emerald-300 transition-colors">
+              <div className="flex items-center justify-between text-xs font-semibold text-neutral-800">
+                <div className="flex items-center gap-1.5">
+                  <UtensilsCrossed className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Catering & Food</span>
+                </div>
+                <span className="text-emerald-800 font-bold">
+                  Rs {state.food.totalCost.toLocaleString()}
+                </span>
+              </div>
+              <div className="text-xs text-neutral-900 font-medium">
+                {state.food.headcount} Meals Required @ Rs {state.food.unitPrice} / person
+              </div>
+              <p className="text-[11px] text-neutral-500 leading-snug">
+                {state.food.itemDescription}
+              </p>
+            </div>
+
+            {/* Area 3: Budget & Expenses */}
+            <div className="border border-neutral-200 rounded-xl p-3.5 space-y-2 bg-emerald-50/30">
+              <div className="flex items-center justify-between text-xs font-semibold text-neutral-900">
+                <div className="flex items-center gap-1.5">
+                  <Wallet className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Budget & Expenses</span>
+                </div>
+                <span className="text-[10px] text-neutral-500">
+                  Ceiling: Rs {state.budget.approvedTotal.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-white p-2 rounded-lg border border-neutral-200">
+                  <span className="text-[10px] text-neutral-500 block">Committed</span>
+                  <span className="font-bold text-neutral-900">
+                    Rs {state.budget.totalCommitted.toLocaleString()}
+                  </span>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-neutral-200">
+                  <span className="text-[10px] text-neutral-500 block">Remaining</span>
+                  <span className="font-bold text-emerald-700">
+                    Rs {state.budget.remainingBalance.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Area 4: Schedule */}
+            <div className="border border-neutral-200 rounded-xl p-3.5 space-y-1.5 hover:border-emerald-300 transition-colors">
+              <div className="flex items-center justify-between text-xs font-semibold text-neutral-800">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Event Schedule (4 Hours)</span>
+                </div>
+                <span className="text-emerald-700 font-medium text-[11px]">
+                  {state.schedule.eventStartTime} - {state.schedule.eventEndTime}
+                </span>
+              </div>
+              <div className="text-[11px] text-neutral-600 space-y-1">
+                <div>• 01:00 PM - 01:25 PM: Opening Ceremony</div>
+                <div>• 01:25 PM - 03:00 PM: Hacking Sprint 1</div>
+                <div className="text-emerald-800 font-semibold">
+                  • 03:00 PM - 03:20 PM: Asr Prayer & Refreshment Break (Mandatory)
+                </div>
+                <div>• 03:20 PM - 04:35 PM: Parallel Judging Rounds</div>
+                <div>• 04:35 PM - 05:00 PM: Closing & Awards</div>
+              </div>
+            </div>
+
+            {/* Area 5: Judges */}
+            <div className="border border-neutral-200 rounded-xl p-3.5 space-y-1.5 hover:border-emerald-300 transition-colors">
+              <div className="flex items-center justify-between text-xs font-semibold text-neutral-800">
+                <div className="flex items-center gap-1.5">
+                  <Gavel className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Judging Allocation</span>
+                </div>
+                <span className="text-neutral-700 text-[11px]">
+                  {state.judging.judgesList.length} Confirmed
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-500">
+                50 teams evaluated across 17 judges (~3 teams/judge). Parallel evaluation prevents delays.
+              </p>
+            </div>
+          </div>
+
+          {/* ════════════════════════════════════════════════════════════════════
+              SECTION 3 — LATEST UPDATES (Audit Trail & Activity History)
+          ════════════════════════════════════════════════════════════════════ */}
+          <div
+            className={`bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm space-y-3 ${
+              activeTab === "plan" ? "hidden lg:block" : "block"
+            }`}
+          >
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-emerald-700" />
+                <h3 className="font-semibold text-sm text-neutral-900">
+                  Section 3 — Latest Updates
+                </h3>
+              </div>
+              <span className="text-[10px] text-neutral-500">
+                {state.updateHistory.length} Activity Records
+              </span>
+            </div>
+
+            {/* List of update cards */}
+            <div className="space-y-3">
+              {state.updateHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded-xl border border-neutral-200 bg-neutral-50/50 hover:bg-white hover:border-neutral-300 transition-colors text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-neutral-900">{item.submittedBy}</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.2 bg-neutral-200 text-neutral-700 rounded">
+                        {item.role}
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        item.status === "Accepted"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : item.status === "Rejected"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+
+                  <div className="text-[11px] italic text-neutral-600 bg-white p-2 rounded border border-neutral-150">
+                    &ldquo;{item.rawMessage}&rdquo;
+                  </div>
+
+                  {item.previousValue && item.newValue && (
+                    <div className="text-[11px] grid grid-cols-2 gap-1 text-neutral-600 pt-0.5">
+                      <div>
+                        <span className="text-neutral-400 block text-[9px] uppercase">Before</span>
+                        <span className="text-neutral-500 line-through truncate block">
+                          {item.previousValue}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-700 block text-[9px] uppercase font-semibold">
+                          After
+                        </span>
+                        <span className="font-medium text-emerald-900 truncate block">
+                          {item.newValue}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-neutral-500 pt-1 border-t border-neutral-100 flex items-start gap-1">
+                    <Info className="w-3 h-3 text-neutral-400 shrink-0 mt-0.5" />
+                    <span>{item.aiAction}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </main>
     </div>
   );
 }

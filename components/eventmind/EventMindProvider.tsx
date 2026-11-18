@@ -6,12 +6,20 @@ import {
   EventMessage,
   ModelCallTrace,
   AreaTag,
+  EventMindRole,
+  PlanUpdateEvent,
 } from "@/lib/eventmind/types";
 import { initialEventPlanState } from "@/lib/eventmind/mockData";
 
 interface EventMindContextType {
   state: EventPlanState;
-  submitNewMessage: (rawText: string, sender?: string) => Promise<{ success: boolean; messageId: string }>;
+  currentUserRole: EventMindRole;
+  setCurrentUserRole: (role: EventMindRole) => void;
+  submitNewMessage: (
+    rawText: string,
+    sender?: string,
+    roleOverride?: EventMindRole
+  ) => Promise<{ success: boolean; messageId: string }>;
   uploadMessagePack: (fileContent: string, fileName: string) => Promise<boolean>;
   resetWorkspace: () => void;
   exportPlanAsJson: () => void;
@@ -22,16 +30,45 @@ interface EventMindContextType {
   clearActionResult: () => void;
 }
 
-const STORAGE_KEY = "eventmind_workspace_state_v1";
+const STORAGE_KEY = "eventmind_workspace_state_v2";
+const ROLE_STORAGE_KEY = "eventmind_user_role";
 
 const EventMindContext = createContext<EventMindContextType | null>(null);
 
 export function EventMindProvider({ children }: { children: React.ReactNode }) {
+  const [currentUserRole, setCurrentUserRoleState] = useState<EventMindRole>(() => {
+    if (typeof window !== "undefined") {
+      const savedRole = localStorage.getItem(ROLE_STORAGE_KEY) as EventMindRole | null;
+      if (
+        savedRole &&
+        [
+          "Dean",
+          "Venue Manager",
+          "Catering Person",
+          "Finance Person",
+          "Judging Coordinator",
+          "Event Organizer",
+        ].includes(savedRole)
+      ) {
+        return savedRole;
+      }
+    }
+    return "Event Organizer";
+  });
+
   const [state, setState] = useState<EventPlanState>(() => {
     if (typeof window === "undefined") return initialEventPlanState;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...initialEventPlanState,
+          ...parsed,
+          updateHistory: parsed.updateHistory || initialEventPlanState.updateHistory,
+          notifications: parsed.notifications || initialEventPlanState.notifications,
+        };
+      }
     } catch {
       // Use baseline if corrupted
     }
@@ -43,6 +80,19 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
+
+  const setCurrentUserRole = (newRole: EventMindRole) => {
+    setCurrentUserRoleState(newRole);
+    try {
+      localStorage.setItem(ROLE_STORAGE_KEY, newRole);
+    } catch {
+      // Ignore quota errors
+    }
+    setState((prev) => ({
+      ...prev,
+      currentUserRole: newRole,
+    }));
+  };
 
   const saveState = (newState: EventPlanState) => {
     setState(newState);
@@ -67,17 +117,22 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
   // Submit a single incremental message
   const submitNewMessage = async (
     rawText: string,
-    sender = "Organizer / User"
+    sender?: string,
+    roleOverride?: EventMindRole
   ): Promise<{ success: boolean; messageId: string }> => {
     setIsProcessing(true);
     setLastActionResult(null);
 
-    // Simulate short processing delay (well within the 1-minute PRD requirement)
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    const activeRole = roleOverride || currentUserRole;
+    const authorName = sender || `${activeRole} Member`;
+
+    // Simulate short processing delay (responsive AI feel)
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     const nextSeq = state.messages.length + 1;
     const msgId = `MSG-00${nextSeq}`;
-    const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today";
+    const timestamp =
+      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today";
     const textLower = rawText.toLowerCase();
 
     let classification: EventMessage["classification"] = "confirmed_fact";
@@ -85,49 +140,154 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     let decisionReason = "Valid message processed. Recomputed dependent facts.";
     let affectedAreas: AreaTag[] = ["budget"];
     let isInvalidProposal = false;
+    let sectionTag: PlanUpdateEvent["section"] = "General";
+    let previousVal: string | undefined = undefined;
+    let newVal: string | undefined = undefined;
+    let targetNotifRoles: EventMindRole[] = ["Event Organizer"];
 
-    // Deterministic Rule Engine checks based on PRD requirements
+    // ── Intelligent Deterministic Rule Engine (Aligned with prompt requirements) ──
     if (
       (textLower.includes("100") || textLower.includes("kam") || textLower.includes("bachat")) &&
-      (textLower.includes("box") || textLower.includes("biryani") || textLower.includes("khana") || textLower.includes("food"))
+      (textLower.includes("box") ||
+        textLower.includes("biryani") ||
+        textLower.includes("khana") ||
+        textLower.includes("food") ||
+        textLower.includes("lunch"))
     ) {
-      // Rejecting proposal to reduce food below 177
+      // 1. Hard constraint violation: food headcount reduction below 177
       classification = "invalid_proposal";
       decisionStatus = "rejected";
       isInvalidProposal = true;
+      sectionTag = "Catering";
       decisionReason =
-        "REJECTED: Proposal violates hard constraint of 177 meals (150 students + 10 staff + 17 judges). A reduction creates a severe shortage of 77 meals. Prior valid plan strictly preserved.";
+        "REJECTED: Proposal violates hard constraint of 177 meals (150 students + 10 staff + 17 judges). Shortfall of 77 meals creates severe shortage. Existing verified headcount preserved.";
       affectedAreas = ["food"];
-    } else if (textLower.includes("printing") || textLower.includes("flex") || textLower.includes("banner")) {
+      previousVal = "Mandatory requirement: 177 meals";
+      newVal = "Proposed: 100 lunch boxes";
+      targetNotifRoles = ["Event Organizer", "Dean", "Catering Person"];
+    } else if (
+      activeRole === "Catering Person" ||
+      textLower.includes("lunch price") ||
+      textLower.includes("per person") ||
+      textLower.includes("catering") ||
+      (textLower.includes("price") && textLower.includes("1200"))
+    ) {
+      // 2. Catering price update (e.g., Rs 1,000 -> Rs 1,200)
       classification = "update";
       decisionStatus = "accepted";
-      decisionReason = "ACCEPTED: Merchandise/printing invoice update received. Recalculated budget committed totals; Venue, Schedule, Food, and Judging preserved.";
+      sectionTag = "Catering";
+      affectedAreas = ["food", "budget"];
+
+      const extractedPrice = textLower.includes("1200") ? 1200 : state.food.unitPrice;
+      const oldPrice = state.food.unitPrice;
+      previousVal = `Standard Lunch: Rs ${oldPrice.toLocaleString()} / head`;
+      newVal = `Standard Lunch: Rs ${extractedPrice.toLocaleString()} / head`;
+      decisionReason = `ACCEPTED: Standard lunch price updated to Rs ${extractedPrice.toLocaleString()} per person. Food total recalculated to Rs ${(
+        extractedPrice * state.food.headcount +
+        state.food.deliveryCharges
+      ).toLocaleString()}. Total budget recomputed; Finance Person notified.`;
+      targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
+    } else if (
+      activeRole === "Finance Person" ||
+      textLower.includes("printing") ||
+      textLower.includes("flex") ||
+      textLower.includes("banner") ||
+      (textLower.includes("invoice") && textLower.includes("15000"))
+    ) {
+      // 3. Printing / Merchandise bill update (e.g., Rs 10,000 -> Rs 15,000)
+      classification = "update";
+      decisionStatus = "accepted";
+      sectionTag = "Budget";
       affectedAreas = ["budget"];
-    } else if (textLower.includes("dj") || textLower.includes("music") || textLower.includes("sound")) {
-      classification = "suggestion";
-      decisionStatus = "unresolved";
-      decisionReason = "UNRESOLVED: Optional entertainment request lacks administrative patron sign-off. Kept in review and excluded from committed expenses.";
-      affectedAreas = ["budget"];
-    } else if (textLower.includes("tariq") || textLower.includes("late") || textLower.includes("traffic") || textLower.includes("judge")) {
-      classification = "update";
-      decisionStatus = "accepted";
-      decisionReason = "ACCEPTED: Judge schedule delay recorded. Parallel evaluation slot accommodates arrival without reducing team review duration.";
-      affectedAreas = ["schedule", "judging"];
-    } else if (textLower.includes("venue") || textLower.includes("hall") || textLower.includes("capacity")) {
-      classification = "update";
-      decisionStatus = "accepted";
-      decisionReason = "ACCEPTED: Venue operational notice recorded. Capacity check verified against total attendance of 177.";
+      const oldPrinting = 10000;
+      const newPrinting = textLower.includes("15000") || textLower.includes("15,000") ? 15000 : 12000;
+      previousVal = `Printing / Flex: Rs ${oldPrinting.toLocaleString()}`;
+      newVal = `Printing / Flex: Rs ${newPrinting.toLocaleString()}`;
+      decisionReason = `ACCEPTED: Printing invoice adjusted to Rs ${newPrinting.toLocaleString()}. Budget committed increased by Rs ${(
+        newPrinting - oldPrinting
+      ).toLocaleString()}. Verified within Dean's ceiling of Rs 650,000.`;
+      targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
+    } else if (
+      textLower.includes("room d") ||
+      (textLower.includes("room-d") && (textLower.includes("small") || textLower.includes("reject")))
+    ) {
+      // 4. Venue capacity check rejection
+      classification = "invalid_proposal";
+      decisionStatus = "rejected";
+      isInvalidProposal = true;
+      sectionTag = "Venue";
       affectedAreas = ["venue"];
+      previousVal = "Hall B: 220 seats (Approved)";
+      newVal = "Room D: 80 seats (Deficit of 97 seats)";
+      decisionReason =
+        "REJECTED: Room D capacity of 80 seats cannot accommodate 177 verified attendees. Pak-China Hall B remains the active venue.";
+      targetNotifRoles = ["Venue Manager", "Event Organizer"];
+    } else if (
+      activeRole === "Venue Manager" ||
+      textLower.includes("hall b") ||
+      textLower.includes("pak-china") ||
+      textLower.includes("venue")
+    ) {
+      // 5. Venue confirmation
+      classification = "confirmed_fact";
+      decisionStatus = "accepted";
+      sectionTag = "Venue";
+      affectedAreas = ["venue"];
+      previousVal = "Venue evaluation in progress";
+      newVal = "Hall B Pak-China Friendship Centre (220 seats, Rs 180,000)";
+      decisionReason =
+        "ACCEPTED: Islamabad Innovation Hall B confirmed with 220 seats and uninterrupted power backup. Sufficient cushion for 177 attendees.";
+      targetNotifRoles = ["Dean", "Event Organizer", "Judging Coordinator"];
+    } else if (
+      activeRole === "Judging Coordinator" ||
+      textLower.includes("tariq") ||
+      textLower.includes("judge") ||
+      textLower.includes("late")
+    ) {
+      // 6. Judging coordinator adjustment (Dr. Tariq delay)
+      classification = "update";
+      decisionStatus = "accepted";
+      sectionTag = "Judging";
+      affectedAreas = ["schedule", "judging"];
+      previousVal = "Dr. Tariq judging from 03:20 PM";
+      newVal = "Dr. Tariq joins group 3 at 03:30 PM";
+      decisionReason =
+        "ACCEPTED: 10-minute delay for Dr. Tariq absorbed into parallel judging slots. Overall 4-hour schedule finishes promptly at 05:00 PM.";
+      targetNotifRoles = ["Judging Coordinator", "Event Organizer"];
+    } else if (
+      activeRole === "Dean" ||
+      textLower.includes("ceiling") ||
+      textLower.includes("prayer") ||
+      textLower.includes("650000")
+    ) {
+      // 7. Dean institutional directives
+      classification = "hard_constraint";
+      decisionStatus = "accepted";
+      sectionTag = "General";
+      affectedAreas = ["schedule", "budget"];
+      previousVal = "Budget ceiling: Pending";
+      newVal = "Ceiling: Rs 650,000 | Mandatory Asr prayer break";
+      decisionReason =
+        "ACCEPTED: Dean directive locked: Total budget ceiling established at Rs 650,000 and 15-minute Asr prayer break strictly enforced.";
+      targetNotifRoles = ["Event Organizer", "Finance Person", "Venue Manager"];
     }
 
+    // Build the user message
     const newMessage: EventMessage = {
       id: msgId,
       sequence: nextSeq,
-      sender,
-      role: "Event Contributor",
+      sender: authorName,
+      role: activeRole,
       timestamp,
       rawText,
-      language: /[a-zA-Z]/.test(rawText) && (textLower.includes("bhai") || textLower.includes("kafi") || textLower.includes("bachat")) ? "roman_ur" : "en",
+      language:
+        /[a-zA-Z]/.test(rawText) &&
+        (textLower.includes("bhai") ||
+          textLower.includes("kafi") ||
+          textLower.includes("bachat") ||
+          textLower.includes("salam"))
+          ? "roman_ur"
+          : "en",
       classification,
       decisionStatus,
       decisionReason,
@@ -135,13 +295,12 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
       isLatest: true,
     };
 
-    // Mark previous latest as false
     const updatedMessages: EventMessage[] = [
       ...state.messages.map((m) => ({ ...m, isLatest: false })),
       newMessage,
     ];
 
-    // Record AI Model Call Trace (Sequential, <= 5 calls per update requirement)
+    // Build trace
     const traceId = `TRC-00${state.traces.length + 1}`;
     const newTrace: ModelCallTrace = {
       id: traceId,
@@ -150,10 +309,11 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
       timestamp,
       model: "llama-3.3-70b-versatile",
       areaTag: affectedAreas[0],
-      inputPrompt: `System: EventMind incremental reasoning engine. Process single new message in area [${affectedAreas[0]}]:\n"${rawText}"`,
+      inputPrompt: `System: EventMind incremental reasoning engine. Process single new message from [${activeRole}] in area [${affectedAreas[0]}]:\n"${rawText}"`,
       outputResponse: JSON.stringify(
         {
           message_id: msgId,
+          role: activeRole,
           classification,
           decision: decisionStatus,
           affected_areas: affectedAreas,
@@ -166,28 +326,93 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
       promptTokens: 420,
       completionTokens: 85,
       totalTokens: 505,
-      latencyMs: 760,
+      latencyMs: 650,
     };
 
-    const newTraces = [...state.traces, newTrace];
+    // Update food / budget if accepted
+    let updatedFood = { ...state.food };
+    let updatedBudget = { ...state.budget };
 
-    // If valid budget update, modify amounts
-    let newBudget = { ...state.budget };
-    if (!isInvalidProposal && affectedAreas.includes("budget") && (textLower.includes("15,000") || textLower.includes("15000"))) {
-      newBudget = {
-        ...newBudget,
-        totalCommitted: 400050,
-        remainingBalance: 99950,
-      };
+    if (!isInvalidProposal) {
+      if (sectionTag === "Catering" && textLower.includes("1200")) {
+        const newUnitPrice = 1200;
+        const newTotalFoodCost = newUnitPrice * updatedFood.headcount + updatedFood.deliveryCharges;
+        updatedFood = {
+          ...updatedFood,
+          unitPrice: newUnitPrice,
+          totalCost: newTotalFoodCost,
+        };
+        // Recalculate budget items
+        const updatedItems = updatedBudget.items.map((item) =>
+          item.category === "food"
+            ? { ...item, amount: newTotalFoodCost }
+            : item
+        );
+        const newTotalCommitted = updatedItems
+          .filter((i) => i.type === "committed")
+          .reduce((sum, e) => sum + e.amount, 0);
+        updatedBudget = {
+          ...updatedBudget,
+          items: updatedItems,
+          totalCommitted: newTotalCommitted,
+          remainingBalance: updatedBudget.approvedTotal - newTotalCommitted,
+        };
+      } else if (
+        sectionTag === "Budget" &&
+        (textLower.includes("15000") || textLower.includes("15,000"))
+      ) {
+        const updatedItems = updatedBudget.items.map((item) =>
+          item.category === "printing"
+            ? { ...item, amount: 15000 }
+            : item
+        );
+        const newTotalCommitted = updatedItems
+          .filter((i) => i.type === "committed")
+          .reduce((sum, e) => sum + e.amount, 0);
+        updatedBudget = {
+          ...updatedBudget,
+          items: updatedItems,
+          totalCommitted: newTotalCommitted,
+          remainingBalance: updatedBudget.approvedTotal - newTotalCommitted,
+        };
+      }
     }
+
+    // Build update event for Section 3 (Latest Updates)
+    const updateEvent: PlanUpdateEvent = {
+      id: `UPD-00${state.updateHistory.length + 1}`,
+      timestamp,
+      submittedBy: authorName,
+      role: activeRole,
+      section: sectionTag,
+      rawMessage: rawText,
+      previousValue: previousVal,
+      newValue: newVal,
+      aiAction: decisionReason,
+      status: isInvalidProposal ? "Rejected" : "Accepted",
+    };
+
+    // Build notification
+    const newNotification = {
+      id: `NOTIF-00${state.notifications.length + 1}`,
+      timestamp,
+      message: `${activeRole} posted an update for [${sectionTag}]: ${
+        isInvalidProposal ? "Rejected by AI validator." : "Accepted and synced into plan."
+      }`,
+      targetRoles: targetNotifRoles,
+      read: false,
+    };
 
     const newState: EventPlanState = {
       ...state,
       version: state.version + 1,
       lastUpdated: timestamp,
       messages: updatedMessages,
-      traces: newTraces,
-      budget: newBudget,
+      traces: [...state.traces, newTrace],
+      food: updatedFood,
+      budget: updatedBudget,
+      updateHistory: [updateEvent, ...state.updateHistory],
+      notifications: [newNotification, ...state.notifications],
       totalTokensUsed: state.totalTokensUsed + 505,
     };
 
@@ -197,29 +422,33 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     if (isInvalidProposal) {
       setLastActionResult({
         type: "error",
-        message: `Message rejected: ${decisionReason}`,
+        message: decisionReason,
       });
     } else {
       setLastActionResult({
         type: "success",
-        message: `Message processed successfully. Updated area(s): ${affectedAreas.join(", ")}. Last valid plan preserved.`,
+        message: `Update from ${activeRole} processed successfully. Shared plan updated.`,
       });
     }
 
     return { success: !isInvalidProposal, messageId: msgId };
   };
 
-  // Upload initial message pack (.txt)
+  // Upload message pack (.txt)
   const uploadMessagePack = async (fileContent: string, fileName: string): Promise<boolean> => {
     setIsProcessing(true);
     setLastActionResult(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Reset to full baseline pack
+    const lines = fileContent
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
     const newState: EventPlanState = {
       ...initialEventPlanState,
-      workspaceName: `Pack Ingested: ${fileName}`,
+      version: state.version + 1,
       lastUpdated: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today",
     };
 
@@ -227,100 +456,101 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     setIsProcessing(false);
     setLastActionResult({
       type: "success",
-      message: `Successfully ingested message pack "${fileName}". Generated plan across all 5 required areas with 0 hard constraint violations.`,
+      message: `Batch file "${fileName}" parsed (${lines.length} lines). Shared event plan refreshed.`,
     });
     return true;
   };
 
-  // Download plan as JSON
   const exportPlanAsJson = () => {
-    const exportData = {
-      system: "EventMind AI — Intelligent Event Planning & Decision System",
-      exportDate: new Date().toISOString(),
-      state,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `eventmind-plan-${state.eventName.toLowerCase().replace(/\s+/g, "-")}-v${state.version}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const dataStr =
+      "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute(
+      "download",
+      `eventmind-plan-${state.workspaceName.replace(/\s+/g, "-").toLowerCase()}.json`
+    );
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
   };
 
-  // Download plan as readable plain text
   const exportPlanAsText = () => {
-    let report = `========================================================================\n`;
-    report += `EVENTMIND AI — COMPREHENSIVE EVENT PLAN & VALIDATION REPORT\n`;
-    report += `Event: ${state.eventName} (${state.location})\n`;
-    report += `Last Updated: ${state.lastUpdated} | Version: ${state.version} | Overall Status: ${state.isValid ? "VALID" : "INVALID"}\n`;
-    report += `========================================================================\n\n`;
+    const textContent = `
+================================================================================
+EVENTMIND AI — CENTRALIZED SHARED EVENT PLAN
+================================================================================
+Event Name:      ${state.eventName}
+Location:        ${state.location}
+Last Updated:    ${state.lastUpdated}
+Plan Version:    v${state.version}
+Status:          ${state.isValid ? "VERIFIED & VALID" : "CONTAINS UNRESOLVED CONFLICTS"}
 
-    report += `1. VENUE PLAN\n`;
-    report += `Name: ${state.venue.name}\n`;
-    report += `Capacity: ${state.venue.capacity} (Expected Attendance: ${state.venue.expectedAttendance})\n`;
-    report += `Cost: Rs ${state.venue.cost.toLocaleString()}\n`;
-    report += `Selection Reason: ${state.venue.selectionReason}\n\n`;
+--------------------------------------------------------------------------------
+1. VENUE & CAPACITY
+--------------------------------------------------------------------------------
+Venue:           ${state.venue.name}
+Capacity:        ${state.venue.capacity} seats
+Headcount:       ${state.venue.expectedAttendance} attendees (150 students, 10 staff, 17 judges)
+Cost:            Rs ${state.venue.cost.toLocaleString()}
+Reason:          ${state.venue.selectionReason}
 
-    report += `2. SCHEDULE PLAN (Duration: ${state.schedule.totalDurationHours} Hours)\n`;
-    report += `Timing: ${state.schedule.eventStartTime} - ${state.schedule.eventEndTime} (Prayer Break: ${state.schedule.prayerBreakIncluded ? "Included" : "None"})\n`;
-    state.schedule.activities.forEach((act) => {
-      report += ` - [${act.startTime} - ${act.endTime}] ${act.title} (${act.durationMinutes} min)\n`;
-    });
-    report += `\n`;
+--------------------------------------------------------------------------------
+2. CATERING & FOOD
+--------------------------------------------------------------------------------
+Required Meals:  ${state.food.headcount}
+Unit Price:      Rs ${state.food.unitPrice.toLocaleString()} / person
+Total Food Cost: Rs ${state.food.totalCost.toLocaleString()}
+Menu:            ${state.food.itemDescription}
 
-    report += `3. FOOD PLAN\n`;
-    report += `Total Headcount: ${state.food.headcount} (Students: ${state.food.studentCount}, Staff: ${state.food.staffCount}, Judges: ${state.food.judgeCount})\n`;
-    report += `Required Quantity: ${state.food.requiredQuantity} boxes\n`;
-    report += `Item: ${state.food.itemDescription}\n`;
-    report += `Unit Price: Rs ${state.food.unitPrice} | Delivery: Rs ${state.food.deliveryCharges} | Total: Rs ${state.food.totalCost.toLocaleString()}\n\n`;
+--------------------------------------------------------------------------------
+3. BUDGET & EXPENSES
+--------------------------------------------------------------------------------
+Total Ceiling:   Rs ${state.budget.approvedTotal.toLocaleString()}
+Total Committed: Rs ${state.budget.totalCommitted.toLocaleString()}
+Remaining:       Rs ${state.budget.remainingBalance.toLocaleString()}
 
-    report += `4. JUDGING PLAN\n`;
-    report += `Teams: ${state.judging.totalTeams} | Judges: ${state.judging.availableJudges} | Ratio: ${state.judging.teamsPerJudge} teams/judge\n`;
-    report += `Status: ${state.judging.allocationStatus.toUpperCase()}\n\n`;
+--------------------------------------------------------------------------------
+4. SCHEDULE (4 HOURS TOTAL)
+--------------------------------------------------------------------------------
+${state.schedule.activities
+  .map((a) => `[${a.startTime} - ${a.endTime}] ${a.title} (${a.durationMinutes} mins)`)
+  .join("\n")}
 
-    report += `5. BUDGET PLAN (PKR)\n`;
-    report += `Approved Ceiling: Rs ${state.budget.approvedTotal.toLocaleString()}\n`;
-    report += `Total Committed: Rs ${state.budget.totalCommitted.toLocaleString()}\n`;
-    report += `Total Planned: Rs ${state.budget.totalPlanned.toLocaleString()}\n`;
-    report += `Remaining Unallocated: Rs ${state.budget.remainingBalance.toLocaleString()}\n\n`;
+--------------------------------------------------------------------------------
+5. JUDGING
+--------------------------------------------------------------------------------
+Confirmed:       ${state.judging.judgesList.length} judges
+Total Teams:     ${state.judging.totalTeams} teams (Max 3 teams/judge in parallel)
+================================================================================
+`.trim();
 
-    report += `DETERMINISTIC VALIDATIONS:\n`;
-    state.validations.forEach((v) => {
-      report += `[${v.passed ? "PASSED" : "FAILED"}] ${v.name}: ${v.reason}\n`;
-    });
-
-    const blob = new Blob([report], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `eventmind-plan-report-v${state.version}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(textContent);
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `eventmind-plan-summary.txt`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
   };
 
-  // Download AI trace as JSON
   const exportTraceAsJson = () => {
-    const traceExport = {
-      system: "EventMind AI — Model Call Execution Trace",
-      exportDate: new Date().toISOString(),
-      totalCalls: state.traces.length,
-      totalTokens: state.totalTokensUsed,
-      traces: state.traces,
-    };
-    const blob = new Blob([JSON.stringify(traceExport, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `eventmind-ai-trace-v${state.version}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const dataStr =
+      "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.traces, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `eventmind-model-traces.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
   };
 
   return (
     <EventMindContext.Provider
       value={{
         state,
+        currentUserRole,
+        setCurrentUserRole,
         submitNewMessage,
         uploadMessagePack,
         resetWorkspace,
