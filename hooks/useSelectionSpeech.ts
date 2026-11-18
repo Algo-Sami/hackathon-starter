@@ -93,9 +93,18 @@ export function useSelectionSpeech() {
     setIsLoading(false);
 
     if (activeAudioRef.current) {
-      activeAudioRef.current.pause();
-      activeAudioRef.current.src = "";
+      const audio = activeAudioRef.current;
       activeAudioRef.current = null;
+      audio.onended = null;
+      audio.onerror = null;
+      audio.onplay = null;
+      audio.pause();
+      try {
+        audio.removeAttribute("src");
+        audio.load();
+      } catch {
+        // Ignore element cleanup errors
+      }
     }
 
     if (abortControllerRef.current) {
@@ -189,10 +198,13 @@ export function useSelectionSpeech() {
         audio.onplay = () => setIsLoading(false);
 
         audio.onended = () => {
+          audio.onended = null;
+          audio.onerror = null;
           void playNextChunkRef.current(index + 1);
         };
 
         audio.onerror = () => {
+          if (!isPlayingRef.current) return;
           setErrorKey("voice.errors.playbackFailed");
           stop();
         };
@@ -414,8 +426,19 @@ export function useSelectionSpeech() {
         utterance.voice = urduVoice;
         utterance.lang = "ur-PK";
         utterance.onstart = () => setIsLoading(false);
-        utterance.onend = () => stop();
-        utterance.onerror = () => {
+        utterance.onend = () => {
+          utterance.onend = null;
+          utterance.onerror = null;
+          stop();
+        };
+        utterance.onerror = (e) => {
+          if (
+            !isPlayingRef.current ||
+            e.error === "canceled" ||
+            e.error === "interrupted"
+          ) {
+            return;
+          }
           setErrorKey("voice.errors.playbackFailed");
           stop();
         };
