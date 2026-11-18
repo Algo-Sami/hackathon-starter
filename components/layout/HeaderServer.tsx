@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "./Header";
 
@@ -6,6 +7,14 @@ export async function HeaderServer() {
   // `connection()` opts this component out of prerendering —
   // it must run at request time since it reads cookies for auth.
   await connection();
+
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+
+  // Never render the public landing header on dashboard
+  if (pathname.startsWith("/dashboard")) {
+    return null;
+  }
 
   const supabase = await createClient();
   const {

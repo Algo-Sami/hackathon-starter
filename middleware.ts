@@ -2,9 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   });
 
@@ -40,10 +43,10 @@ export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     // Logged-in users who visit /login or /register are redirected to Home
     if (user && (pathname === "/login" || pathname === "/register")) {
-      const homeUrl = request.nextUrl.clone();
-      homeUrl.pathname = "/";
-      homeUrl.search = "";
-      return NextResponse.redirect(homeUrl);
+      const dashUrl = request.nextUrl.clone();
+      dashUrl.pathname = "/dashboard";
+      dashUrl.search = "";
+      return NextResponse.redirect(dashUrl);
     }
   }
 

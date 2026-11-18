@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   EventPlanState,
   EventMessage,
@@ -55,6 +56,26 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     }
     return "Event Organizer";
   });
+
+  // Retrieve authenticated user's role from Supabase metadata on mount
+  useEffect(() => {
+    async function loadSupabaseRole() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user?.user_metadata?.role) {
+          const roleFromDb = user.user_metadata.role as EventMindRole;
+          setCurrentUserRoleState(roleFromDb);
+          localStorage.setItem(ROLE_STORAGE_KEY, roleFromDb);
+        }
+      } catch {
+        // Fallback to local state if offline/network error
+      }
+    }
+    loadSupabaseRole();
+  }, []);
 
   const [state, setState] = useState<EventPlanState>(() => {
     if (typeof window === "undefined") return initialEventPlanState;
