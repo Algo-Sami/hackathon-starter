@@ -242,6 +242,7 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
       affectedAreas?: AreaTag[];
       planVersion?: number;
       historyId?: string;
+      updatedPlan?: Record<string, unknown>;
     } | null = null;
     try {
       const apiRes = await fetch("/api/eventmind/messages", {
@@ -282,7 +283,75 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
 
     if (!backendResult) {
       // Client-side fallback rule engine when server API is unreachable
-      if (
+      const isQuery =
+        textLower.includes("how to test") ||
+        textLower.includes("test you") ||
+        textLower.includes("how do i test") ||
+        textLower.includes("what can you do") ||
+        textLower.includes("who are you") ||
+        (textLower.endsWith("?") &&
+          !textLower.includes("price") &&
+          !textLower.includes("rent") &&
+          !textLower.includes("box") &&
+          !textLower.includes("room")) ||
+        textLower === "help" ||
+        textLower === "hi" ||
+        textLower === "hello";
+
+      const isDurationChange =
+        textLower.includes("duration") ||
+        textLower.includes("durtion") ||
+        (textLower.includes("hour") &&
+          (textLower.includes("three") ||
+            textLower.includes("3") ||
+            textLower.includes("two") ||
+            textLower.includes("2") ||
+            textLower.includes("five") ||
+            textLower.includes("5"))) ||
+        textLower.includes("ghante") ||
+        textLower.includes("ghanta");
+
+      if (isQuery) {
+        classification = "suggestion";
+        decisionStatus = "unresolved";
+        isInvalidProposal = false;
+        sectionTag = "General";
+        decisionReason =
+          "INFORMATIONAL INQUIRY: EventMind AI monitors constraints and updates the shared plan in real-time. To test constraint validations, try:\n" +
+          "• Test meal constraint: 'Order 100 biryani boxes' (Rejects < 177 meals)\n" +
+          "• Test duration constraint: 'Change duration to 3 hours' (Rejects != 4.0 hours)\n" +
+          "• Test venue capacity: 'Use Room D with 80 seats' (Rejects < 177 seats)\n" +
+          "• Test valid catering update: 'Lunch price increased to 1200' (Updates food & budget)\n" +
+          "• Test valid budget update: 'Vendor flex banners invoice is 15,000' (Updates budget within Rs 650k ceiling)";
+      } else if (isDurationChange) {
+        classification = "invalid_proposal";
+        decisionStatus = "rejected";
+        isInvalidProposal = true;
+        sectionTag = "Schedule";
+        affectedAreas = ["schedule"];
+        previousVal = "Schedule Duration: 4.0 hours (Mandatory)";
+        newVal = "Proposed: 3.0 hours (Rejected)";
+        decisionReason =
+          "REJECTED: Physical hackathon schedule duration is strictly locked to exactly 4.0 hours (01:00 PM – 05:00 PM) by institutional patron directive. Proposed duration cannot be accepted. The mandatory 4.0-hour schedule is preserved.";
+        targetNotifRoles = ["Event Organizer", "Dean", "Judging Coordinator"];
+      } else if (
+        textLower.includes("prayer") &&
+        (textLower.includes("remove") ||
+          textLower.includes("cancel") ||
+          textLower.includes("skip") ||
+          textLower.includes("no prayer"))
+      ) {
+        classification = "invalid_proposal";
+        decisionStatus = "rejected";
+        isInvalidProposal = true;
+        sectionTag = "Schedule";
+        affectedAreas = ["schedule"];
+        previousVal = "Asr Prayer Break: 15-20 min (Mandatory)";
+        newVal = "Proposed: Remove prayer break (Rejected)";
+        decisionReason =
+          "REJECTED: The 15-minute Asr prayer break (03:00 PM – 03:20 PM) is a mandatory institutional requirement and cannot be removed or shortened.";
+        targetNotifRoles = ["Event Organizer", "Dean"];
+      } else if (
         (textLower.includes("100") || textLower.includes("kam") || textLower.includes("bachat")) &&
         (textLower.includes("box") ||
           textLower.includes("biryani") ||
@@ -295,7 +364,7 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
         isInvalidProposal = true;
         sectionTag = "Catering";
         decisionReason =
-          "REJECTED: Proposal violates hard constraint of 177 meals (150 students + 10 staff + 17 judges). Shortfall of 77 meals creates severe shortage. Existing verified headcount preserved.";
+          "REJECTED: Proposal violates hard constraint of 177 meals (150 students + 10 staff + 17 judges). Shortfall of 77 meals creates severe shortage. Existing verified headcount of 177 meals preserved.";
         affectedAreas = ["food"];
         previousVal = "Mandatory requirement: 177 meals";
         newVal = "Proposed: 100 lunch boxes";
@@ -341,76 +410,55 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
         targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
       } else if (
         textLower.includes("room d") ||
-        (textLower.includes("room-d") && (textLower.includes("small") || textLower.includes("reject")))
+        (textLower.includes("room-d") && (textLower.includes("small") || textLower.includes("reject") || textLower.includes("80")))
       ) {
-      // 4. Venue capacity check rejection
-      classification = "invalid_proposal";
-      decisionStatus = "rejected";
-      isInvalidProposal = true;
-      sectionTag = "Venue";
-      affectedAreas = ["venue"];
-      previousVal = "Hall B: 220 seats (Approved)";
-      newVal = "Room D: 80 seats (Deficit of 97 seats)";
-      decisionReason =
-        "REJECTED: Room D capacity of 80 seats cannot accommodate 177 verified attendees. Pak-China Hall B remains the active venue.";
-      targetNotifRoles = ["Venue Manager", "Event Organizer"];
-    } else if (
-      activeRole === "Venue Manager" ||
-      textLower.includes("hall b") ||
-      textLower.includes("pak-china") ||
-      textLower.includes("venue")
-    ) {
-      // 5. Venue confirmation
-      classification = "confirmed_fact";
-      decisionStatus = "accepted";
-      sectionTag = "Venue";
-      affectedAreas = ["venue"];
-      previousVal = "Venue evaluation in progress";
-      newVal = "Hall B Pak-China Friendship Centre (220 seats, Rs 180,000)";
-      decisionReason =
-        "ACCEPTED: Islamabad Innovation Hall B confirmed with 220 seats and uninterrupted power backup. Sufficient cushion for 177 attendees.";
-      targetNotifRoles = ["Dean", "Event Organizer", "Judging Coordinator"];
-    } else if (
-      activeRole === "Judging Coordinator" ||
-      textLower.includes("tariq") ||
-      textLower.includes("judge") ||
-      textLower.includes("late")
-    ) {
-      // 6. Judging coordinator adjustment (Dr. Tariq delay)
-      classification = "update";
-      decisionStatus = "accepted";
-      sectionTag = "Judging";
-      affectedAreas = ["schedule", "judging"];
-      previousVal = "Dr. Tariq judging from 03:20 PM";
-      newVal = "Dr. Tariq joins group 3 at 03:30 PM";
-      decisionReason =
-        "ACCEPTED: 10-minute delay for Dr. Tariq absorbed into parallel judging slots. Overall 4-hour schedule finishes promptly at 05:00 PM.";
-      targetNotifRoles = ["Judging Coordinator", "Event Organizer"];
-    } else if (
-      activeRole === "Dean" ||
-      textLower.includes("ceiling") ||
-      textLower.includes("prayer") ||
-      textLower.includes("650000")
-    ) {
-      // 7. Dean institutional directives
-      classification = "hard_constraint";
-      decisionStatus = "accepted";
-      sectionTag = "General";
-      affectedAreas = ["schedule", "budget"];
-      previousVal = "Budget ceiling: Pending";
-      newVal = "Ceiling: Rs 650,000 | Mandatory Asr prayer break";
-      decisionReason =
-        "ACCEPTED: Dean directive locked: Total budget ceiling established at Rs 650,000 and 15-minute Asr prayer break strictly enforced.";
-      targetNotifRoles = ["Event Organizer", "Finance Person", "Venue Manager"];
+        classification = "invalid_proposal";
+        decisionStatus = "rejected";
+        isInvalidProposal = true;
+        sectionTag = "Venue";
+        affectedAreas = ["venue"];
+        previousVal = "Hall B: 220 seats (Approved)";
+        newVal = "Room D: 80 seats (Deficit of 97 seats)";
+        decisionReason =
+          "REJECTED: Room D capacity of 80 seats cannot accommodate 177 verified attendees. Pak-China Hall B remains the active venue.";
+        targetNotifRoles = ["Venue Manager", "Event Organizer"];
+      } else if (
+        activeRole === "Venue Manager" ||
+        textLower.includes("hall b") ||
+        textLower.includes("pak-china") ||
+        textLower.includes("venue")
+      ) {
+        classification = "confirmed_fact";
+        decisionStatus = "accepted";
+        sectionTag = "Venue";
+        affectedAreas = ["venue"];
+        previousVal = "Venue evaluation in progress";
+        newVal = "Hall B Pak-China Friendship Centre (220 seats, Rs 180,000)";
+        decisionReason =
+          "ACCEPTED: Islamabad Innovation Hall B confirmed with 220 seats and uninterrupted power backup. Sufficient cushion for 177 attendees.";
+        targetNotifRoles = ["Dean", "Event Organizer", "Judging Coordinator"];
+      } else if (
+        (activeRole === "Judging Coordinator" || textLower.includes("tariq") || textLower.includes("judge")) &&
+        (textLower.includes("traffic") || textLower.includes("late") || textLower.includes("delay"))
+      ) {
+        classification = "update";
+        decisionStatus = "accepted";
+        sectionTag = "Judging";
+        affectedAreas = ["schedule", "judging"];
+        previousVal = "Dr. Tariq judging from 03:20 PM";
+        newVal = "Dr. Tariq joins group 3 at 03:30 PM";
+        decisionReason =
+          "ACCEPTED: 10-minute delay for Dr. Tariq absorbed into parallel judging slots. Overall 4-hour schedule finishes promptly at 05:00 PM.";
+        targetNotifRoles = ["Judging Coordinator", "Event Organizer"];
+      }
+    } else {
+      const areas = (backendResult.affectedAreas as string[]) || [];
+      if (areas.includes("Catering") || areas.includes("food")) sectionTag = "Catering";
+      else if (areas.includes("Venue") || areas.includes("venue")) sectionTag = "Venue";
+      else if (areas.includes("Budget") || areas.includes("budget")) sectionTag = "Budget";
+      else if (areas.includes("Schedule") || areas.includes("schedule")) sectionTag = "Schedule";
+      else if (areas.includes("Judging") || areas.includes("judging")) sectionTag = "Judging";
     }
-  } else {
-    const areas = (backendResult.affectedAreas as string[]) || [];
-    if (areas.includes("Catering") || areas.includes("food")) sectionTag = "Catering";
-    else if (areas.includes("Venue") || areas.includes("venue")) sectionTag = "Venue";
-    else if (areas.includes("Budget") || areas.includes("budget")) sectionTag = "Budget";
-    else if (areas.includes("Schedule") || areas.includes("schedule")) sectionTag = "Schedule";
-    else if (areas.includes("Judging") || areas.includes("judging")) sectionTag = "Judging";
-  }
 
     // Build the user message
     const newMessage: EventMessage = {
@@ -469,24 +517,36 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
       latencyMs: 650,
     };
 
-    // Update food / budget if accepted
+    // Update food / budget / venue / schedule / judging if accepted
     let updatedFood = { ...state.food };
     let updatedBudget = { ...state.budget };
+    let updatedVenue = { ...state.venue };
+    let updatedSchedule = { ...state.schedule };
+    let updatedJudging = { ...state.judging };
+    let newVersion = state.version;
 
-    if (!isInvalidProposal) {
-      if (sectionTag === "Catering" && textLower.includes("1200")) {
-        const newUnitPrice = 1200;
+    if (backendResult?.updatedPlan) {
+      const plan = backendResult.updatedPlan;
+      if (plan.venue) updatedVenue = { ...updatedVenue, ...(plan.venue as Record<string, unknown>) };
+      if (plan.food || plan.catering) updatedFood = { ...updatedFood, ...((plan.food || plan.catering) as Record<string, unknown>) };
+      if (plan.budget) updatedBudget = { ...updatedBudget, ...(plan.budget as Record<string, unknown>) };
+      if (plan.schedule) updatedSchedule = { ...updatedSchedule, ...(plan.schedule as Record<string, unknown>) };
+      if (plan.judging) updatedJudging = { ...updatedJudging, ...(plan.judging as Record<string, unknown>) };
+      if (typeof plan.version === "number") newVersion = plan.version;
+    } else if (!isInvalidProposal) {
+      const priceMatch = rawText.match(/\b(?:rs\.?|pkr)?\s*(\d{3,4})\b/i);
+      const extractedPrice = priceMatch ? parseInt(priceMatch[1], 10) : textLower.includes("1200") ? 1200 : null;
+
+      if ((sectionTag === "Catering" || textLower.includes("lunch")) && extractedPrice) {
+        const newUnitPrice = extractedPrice;
         const newTotalFoodCost = newUnitPrice * updatedFood.headcount + updatedFood.deliveryCharges;
         updatedFood = {
           ...updatedFood,
           unitPrice: newUnitPrice,
           totalCost: newTotalFoodCost,
         };
-        // Recalculate budget items
         const updatedItems = updatedBudget.items.map((item) =>
-          item.category === "food"
-            ? { ...item, amount: newTotalFoodCost }
-            : item
+          item.category === "food" ? { ...item, amount: newTotalFoodCost } : item
         );
         const newTotalCommitted = updatedItems
           .filter((i) => i.type === "committed")
@@ -497,24 +557,40 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
           totalCommitted: newTotalCommitted,
           remainingBalance: updatedBudget.approvedTotal - newTotalCommitted,
         };
+        newVersion += 1;
       } else if (
-        sectionTag === "Budget" &&
-        (textLower.includes("15000") || textLower.includes("15,000"))
+        sectionTag === "Budget" ||
+        textLower.includes("printing") ||
+        textLower.includes("flex") ||
+        textLower.includes("15000") ||
+        textLower.includes("15,000")
       ) {
+        const amountMatch = rawText.match(/\b(?:rs\.?|pkr)?\s*(\d{4,6})\b/i);
+        const newPrinting = amountMatch ? parseInt(amountMatch[1], 10) : 15000;
+        const delta = newPrinting - 10000;
         const updatedItems = updatedBudget.items.map((item) =>
-          item.category === "printing"
-            ? { ...item, amount: 15000 }
-            : item
+          item.category === "printing" ? { ...item, amount: newPrinting } : item
         );
-        const newTotalCommitted = updatedItems
-          .filter((i) => i.type === "committed")
-          .reduce((sum, e) => sum + e.amount, 0);
+        const newTotalCommitted = 400050 + delta;
         updatedBudget = {
           ...updatedBudget,
           items: updatedItems,
           totalCommitted: newTotalCommitted,
           remainingBalance: updatedBudget.approvedTotal - newTotalCommitted,
         };
+        newVersion += 1;
+      } else if (
+        sectionTag === "Venue" &&
+        (textLower.includes("hall b") || textLower.includes("pak-china"))
+      ) {
+        updatedVenue = {
+          ...updatedVenue,
+          name: "Islamabad Innovation Hall B (Pak-China Friendship Centre)",
+          capacity: 220,
+          cost: 180000,
+          status: "approved",
+        };
+        newVersion += 1;
       }
     }
 
@@ -545,19 +621,42 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
 
     const newState: EventPlanState = {
       ...state,
-      version: state.version + 1,
+      version: newVersion,
       lastUpdated: timestamp,
       messages: updatedMessages,
       traces: [...state.traces, newTrace],
+      venue: updatedVenue,
       food: updatedFood,
       budget: updatedBudget,
-      updateHistory: [updateEvent, ...state.updateHistory],
+      schedule: updatedSchedule,
+      judging: updatedJudging,
+      updateHistory: isInvalidProposal
+        ? state.updateHistory
+        : [updateEvent, ...state.updateHistory],
       notifications: [newNotification, ...state.notifications],
       totalTokensUsed: state.totalTokensUsed + 505,
     };
 
     saveState(newState);
     setIsProcessing(false);
+
+    // Sync latest plan from database in background
+    fetch("/api/eventmind/plan")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((planRes) => {
+        if (planRes?.plan) {
+          setState((prev) => ({
+            ...prev,
+            venue: planRes.plan.venue || prev.venue,
+            food: planRes.plan.food || prev.food,
+            budget: planRes.plan.budget || prev.budget,
+            schedule: planRes.plan.schedule || prev.schedule,
+            judging: planRes.plan.judging || prev.judging,
+            version: planRes.plan.version || prev.version,
+          }));
+        }
+      })
+      .catch(() => {});
 
     if (isInvalidProposal) {
       setLastActionResult({

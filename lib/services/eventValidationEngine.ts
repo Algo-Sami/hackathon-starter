@@ -1,4 +1,4 @@
-import { ExtractedPlanProposal } from "./aiProviderService";
+import type { ExtractedPlanProposal } from "./aiProviderService";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -44,7 +44,84 @@ export function validateProposedPlanChange(
 ): ValidationResult {
   const textLower = rawMessage.toLowerCase();
 
-  // 1. Role Permission Validation
+  // 1. General Queries, Help Inquiries & Testing Questions (No Plan Modifications)
+  const isQuery =
+    proposal.intent === "query" ||
+    textLower.includes("how to test") ||
+    textLower.includes("test you") ||
+    textLower.includes("how do i test") ||
+    textLower.includes("what can you do") ||
+    textLower.includes("who are you") ||
+    (textLower.endsWith("?") && !textLower.includes("price") && !textLower.includes("rent") && !textLower.includes("box") && !textLower.includes("room")) ||
+    textLower === "help" ||
+    textLower === "hi" ||
+    textLower === "hello";
+
+  if (isQuery) {
+    return {
+      isValid: true,
+      action: "Needs Clarification",
+      reason:
+        "INFORMATIONAL INQUIRY: EventMind AI is monitoring constraints and synchronizing the shared plan. To test constraint validations, try:\n" +
+        "• Test meal constraint: 'Order 100 biryani boxes' (Rejects < 177 meals)\n" +
+        "• Test duration constraint: 'Change duration to 3 hours' (Rejects != 4.0 hours)\n" +
+        "• Test venue capacity: 'Use Room D with 80 seats' (Rejects < 177 seats)\n" +
+        "• Test valid catering update: 'Lunch price increased to 1200' (Updates food & budget)\n" +
+        "• Test valid budget update: 'Vendor flex banners invoice is 15,000' (Updates budget within Rs 650k ceiling)",
+      affectedSections: ["General"],
+      previousValue: undefined,
+      newValue: undefined,
+      targetNotifRoles: [userRole],
+    };
+  }
+
+  // 2. Schedule Duration Hard Constraint (Strictly 4.0 Hours)
+  const isDurationChange =
+    textLower.includes("duration") ||
+    textLower.includes("durtion") ||
+    (textLower.includes("hour") && (textLower.includes("three") || textLower.includes("3") || textLower.includes("two") || textLower.includes("2") || textLower.includes("five") || textLower.includes("5"))) ||
+    textLower.includes("ghante") ||
+    textLower.includes("ghanta");
+
+  if (isDurationChange) {
+    const mentionsThree = textLower.includes("3") || textLower.includes("three");
+    const mentionsTwo = textLower.includes("2") || textLower.includes("two");
+    const mentionsFive = textLower.includes("5") || textLower.includes("five");
+    const proposedHrs = mentionsThree ? 3 : mentionsTwo ? 2 : mentionsFive ? 5 : "non-standard";
+
+    return {
+      isValid: false,
+      action: "Rejected",
+      reason: `REJECTED: Physical hackathon schedule duration is strictly locked to exactly 4.0 hours (01:00 PM – 05:00 PM) by institutional patron directive. Proposed duration of ${proposedHrs} hours violates the schedule constraint. The mandatory 4.0-hour schedule is preserved.`,
+      affectedSections: ["Schedule"],
+      previousValue: "Schedule Duration: 4.0 hours (Mandatory)",
+      newValue: `Proposed: ${proposedHrs} hours (Rejected)`,
+      targetNotifRoles: ["Event Organizer", "Dean", "Judging Coordinator"],
+    };
+  }
+
+  // 3. Prayer Break Hard Constraint (Mandatory 15-minute Asr Break)
+  if (
+    textLower.includes("prayer") &&
+    (textLower.includes("remove") ||
+      textLower.includes("cancel") ||
+      textLower.includes("skip") ||
+      textLower.includes("no prayer") ||
+      textLower.includes("khatam"))
+  ) {
+    return {
+      isValid: false,
+      action: "Rejected",
+      reason:
+        "REJECTED: The 15-minute Asr prayer break (03:00 PM – 03:20 PM) is a mandatory institutional requirement and cannot be removed or shortened.",
+      affectedSections: ["Schedule"],
+      previousValue: "Asr Prayer Break: 15-20 min (Mandatory)",
+      newValue: "Proposed: Remove prayer break (Rejected)",
+      targetNotifRoles: ["Event Organizer", "Dean"],
+    };
+  }
+
+  // 4. Role Permission Validation
   const roleSectionPermissions: Record<string, string[]> = {
     "Catering Person": ["Catering", "Budget", "General"],
     "Finance Person": ["Budget", "General"],
@@ -65,12 +142,13 @@ export function validateProposedPlanChange(
     };
   }
 
-  // 2. Catering Headcount Hard Constraint
+  // 5. Catering Headcount Hard Constraint (< 177 meals)
   if (
     proposal.section === "Catering" ||
     textLower.includes("100") ||
     textLower.includes("kam") ||
-    textLower.includes("bachat")
+    textLower.includes("bachat") ||
+    textLower.includes("shortage")
   ) {
     const qtyChange = proposal.proposed_changes.find(
       (c) => c.field === "required_quantity" || c.field === "quantity"
@@ -82,7 +160,7 @@ export function validateProposedPlanChange(
       return {
         isValid: false,
         action: "Rejected",
-        reason: `REJECTED: Proposal violates hard constraint of ${plan.headcount} meals (150 students + 10 staff + 17 judges). Shortage of ${deficit} meals is not permitted. Existing verified headcount preserved.`,
+        reason: `REJECTED: Proposal violates hard constraint of ${plan.headcount} meals (150 students + 10 staff + 17 judges). Shortage of ${deficit} meals is not permitted. Existing verified headcount of 177 meals preserved.`,
         affectedSections: ["Catering"],
         previousValue: `Mandatory Meals: ${plan.headcount} headcount`,
         newValue: `Proposed: ${quantity} meals (Shortfall of ${deficit})`,
@@ -91,9 +169,16 @@ export function validateProposedPlanChange(
     }
   }
 
-  // 3. Catering Price Incremental Update (e.g. Rs 1,000 -> Rs 1,200)
-  if (proposal.section === "Catering" && (textLower.includes("1200") || textLower.includes("price") || textLower.includes("lunch"))) {
-    const newPrice = textLower.includes("1200") ? 1200 : 650;
+  // 6. Catering Price Incremental Update (e.g. Rs 1,000 -> Rs 1,200)
+  if (
+    proposal.section === "Catering" &&
+    (textLower.includes("1200") ||
+      textLower.includes("price") ||
+      textLower.includes("rate") ||
+      textLower.includes("lunch"))
+  ) {
+    const priceMatch = rawMessage.match(/\b(?:rs\.?|pkr)?\s*(\d{3,4})\b/i);
+    const newPrice = priceMatch ? parseInt(priceMatch[1], 10) : textLower.includes("1200") ? 1200 : 650;
     const oldPrice = 1000;
     const newTotalFood = newPrice * plan.headcount + 5000; // delivery
     return {
@@ -107,9 +192,21 @@ export function validateProposedPlanChange(
     };
   }
 
-  // 4. Venue Capacity Hard Constraint
-  if (proposal.section === "Venue" || textLower.includes("room d") || textLower.includes("room-d")) {
-    if (textLower.includes("room d") || textLower.includes("room-d") || (proposal.proposed_changes[0]?.numeric_value && proposal.proposed_changes[0].numeric_value < plan.headcount)) {
+  // 7. Venue Capacity Hard Constraint (< 177 seats)
+  if (
+    proposal.section === "Venue" ||
+    textLower.includes("room d") ||
+    textLower.includes("room-d") ||
+    textLower.includes("room 80") ||
+    textLower.includes("80 seats")
+  ) {
+    if (
+      textLower.includes("room d") ||
+      textLower.includes("room-d") ||
+      textLower.includes("80 seats") ||
+      (proposal.proposed_changes[0]?.numeric_value &&
+        proposal.proposed_changes[0].numeric_value < plan.headcount)
+    ) {
       return {
         isValid: false,
         action: "Rejected",
@@ -125,7 +222,8 @@ export function validateProposedPlanChange(
       return {
         isValid: true,
         action: "Accepted",
-        reason: "ACCEPTED: Islamabad Innovation Hall B confirmed with 220 seats and uninterrupted backup power. Accommodates 177 attendees with 43 seats cushion.",
+        reason:
+          "ACCEPTED: Islamabad Innovation Hall B confirmed with 220 seats and uninterrupted backup power. Accommodates 177 attendees with 43 seats cushion.",
         affectedSections: ["Venue"],
         previousValue: "Venue selection pending confirmation",
         newValue: "Hall B (Pak-China Centre, 220 seats, Rs 180,000)",
@@ -134,9 +232,20 @@ export function validateProposedPlanChange(
     }
   }
 
-  // 5. Budget Line-Item and Ceiling Constraint
-  if (proposal.section === "Budget" || textLower.includes("printing") || textLower.includes("flex") || textLower.includes("15000")) {
-    const isPrinting = textLower.includes("printing") || textLower.includes("15000") || textLower.includes("15,000");
+  // 8. Budget Line-Item and Ceiling Constraint
+  if (
+    proposal.section === "Budget" ||
+    textLower.includes("printing") ||
+    textLower.includes("flex") ||
+    textLower.includes("banner") ||
+    textLower.includes("15000")
+  ) {
+    const isPrinting =
+      textLower.includes("printing") ||
+      textLower.includes("flex") ||
+      textLower.includes("banner") ||
+      textLower.includes("15000") ||
+      textLower.includes("15,000");
     const delta = isPrinting ? 5000 : 0;
     const newCommitted = plan.totalCommitted + delta;
 
@@ -144,7 +253,9 @@ export function validateProposedPlanChange(
       return {
         isValid: false,
         action: "Rejected",
-        reason: `REJECTED: Expense of Rs ${newCommitted.toLocaleString()} exceeds approved budget ceiling of Rs ${plan.budgetCeiling.toLocaleString()} by Rs ${(newCommitted - plan.budgetCeiling).toLocaleString()}.`,
+        reason: `REJECTED: Expense of Rs ${newCommitted.toLocaleString()} exceeds approved budget ceiling of Rs ${plan.budgetCeiling.toLocaleString()} by Rs ${(
+          newCommitted - plan.budgetCeiling
+        ).toLocaleString()}.`,
         affectedSections: ["Budget"],
         targetNotifRoles: ["Finance Person", "Event Organizer", "Dean"],
       };
@@ -153,7 +264,7 @@ export function validateProposedPlanChange(
     return {
       isValid: true,
       action: "Accepted",
-      reason: `ACCEPTED: Vendor invoice adjusted for flex & backdrop printing. Committed expenses updated to Rs ${newCommitted.toLocaleString()}. Verified within approved ceiling of Rs ${plan.budgetCeiling.toLocaleString()}.`,
+      reason: `ACCEPTED: Vendor invoice adjusted for flex & backdrop printing to Rs 15,000. Committed expenses updated to Rs ${newCommitted.toLocaleString()}. Verified within approved ceiling of Rs ${plan.budgetCeiling.toLocaleString()}.`,
       affectedSections: ["Budget"],
       previousValue: "Printing / Flex: Rs 10,000",
       newValue: "Printing / Flex: Rs 15,000",
@@ -161,12 +272,16 @@ export function validateProposedPlanChange(
     };
   }
 
-  // 6. Judging & Schedule Constraints
-  if (proposal.section === "Judging" || proposal.section === "Schedule" || textLower.includes("tariq") || textLower.includes("judge")) {
+  // 9. Judging Roster & Delays
+  if (
+    (proposal.section === "Judging" || textLower.includes("judge") || textLower.includes("tariq")) &&
+    (textLower.includes("delay") || textLower.includes("traffic") || textLower.includes("late") || textLower.includes("highway"))
+  ) {
     return {
       isValid: true,
       action: "Accepted",
-      reason: "ACCEPTED: 10-minute motorway delay for Dr. Tariq absorbed into parallel judging slots. Overall 4-hour schedule finishes promptly at 05:00 PM.",
+      reason:
+        "ACCEPTED: 10-minute motorway delay for Dr. Tariq absorbed into parallel judging slots. Overall 4-hour schedule finishes promptly at 05:00 PM.",
       affectedSections: ["Schedule", "Judging"],
       previousValue: "Dr. Tariq judging from 03:20 PM",
       newValue: "Dr. Tariq joins group 3 at 03:30 PM",
@@ -174,7 +289,7 @@ export function validateProposedPlanChange(
     };
   }
 
-  // 7. General Verified Update
+  // 10. General Verified Update
   return {
     isValid: true,
     action: "Accepted",

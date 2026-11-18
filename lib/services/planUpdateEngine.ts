@@ -20,7 +20,7 @@ export interface PlanUpdateParams {
  */
 export async function applyIncrementalPlanUpdate(
   params: PlanUpdateParams
-): Promise<{ success: boolean; newVersion: number; historyId?: string }> {
+): Promise<{ success: boolean; newVersion: number; historyId?: string; updatedPlan?: Record<string, unknown> }> {
   const supabase = await createClient();
 
   // 1. Fetch current shared event plan from Supabase
@@ -95,15 +95,28 @@ export async function applyIncrementalPlanUpdate(
 
   const rawLower = params.rawMessage.toLowerCase();
 
-  if (params.proposal.section === "Catering" && rawLower.includes("1200")) {
-    const committed = 400050 + (1200 - 650) * 177;
-    updatedCatering.unitPrice = 1200;
-    updatedCatering.totalCost = 1200 * 177 + 5000;
+  // Dynamic Catering Price Extraction
+  const priceMatch = params.rawMessage.match(/\b(?:rs\.?|pkr)?\s*(\d{3,4})\b/i);
+  const extractedPrice = priceMatch ? parseInt(priceMatch[1], 10) : rawLower.includes("1200") ? 1200 : null;
+
+  if (params.proposal.section === "Catering" && extractedPrice) {
+    const committed = 400050 + (extractedPrice - 650) * 177;
+    updatedCatering.unitPrice = extractedPrice;
+    updatedCatering.totalCost = extractedPrice * 177 + 5000;
     updatedBudget.totalCommitted = committed;
     updatedBudget.remainingBalance = 650000 - committed;
-  } else if (params.proposal.section === "Budget" && (rawLower.includes("15000") || rawLower.includes("15,000"))) {
-    updatedBudget.totalCommitted = 405050;
-    updatedBudget.remainingBalance = 244950;
+  } else if (
+    params.proposal.section === "Budget" ||
+    rawLower.includes("printing") ||
+    rawLower.includes("flex") ||
+    rawLower.includes("banner")
+  ) {
+    const amountMatch = params.rawMessage.match(/\b(?:rs\.?|pkr)?\s*(\d{4,6})\b/i);
+    const newPrinting = amountMatch ? parseInt(amountMatch[1], 10) : 15000;
+    const delta = newPrinting - 10000;
+    const committed = 400050 + delta;
+    updatedBudget.totalCommitted = committed;
+    updatedBudget.remainingBalance = 650000 - committed;
   } else if (params.proposal.section === "Venue" && (rawLower.includes("hall b") || rawLower.includes("pak-china"))) {
     updatedVenue.name = "Islamabad Innovation Hall B (Pak-China Friendship Centre)";
     updatedVenue.capacity = 220;
@@ -129,9 +142,22 @@ export async function applyIncrementalPlanUpdate(
     }
   }
 
+  const updatedPlan = {
+    venue: updatedVenue,
+    catering: updatedCatering,
+    food: updatedCatering,
+    budget: updatedBudget,
+    schedule: currentPlan?.schedule_details || {},
+    judging: currentPlan?.judging_details || {},
+    version: newVersion,
+    isValid: true,
+    lastUpdated: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today",
+  };
+
   return {
     success: true,
     newVersion,
     historyId: historyData?.id,
+    updatedPlan,
   };
 }

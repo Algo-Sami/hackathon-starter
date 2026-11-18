@@ -523,9 +523,9 @@ export default function AgentDashboardPage() {
                                     ? "AI Validator: Proposal Rejected"
                                     : isAccepted
                                     ? "AI Assistant: Update Accepted & Synced"
-                                    : "AI Assistant: Review Required"}
+                                    : "AI Assistant: Informational / Guidance"}
                                 </div>
-                                <p>{msg.decisionReason}</p>
+                                <p className="whitespace-pre-line">{msg.decisionReason}</p>
                               </div>
                             </div>
                           )}

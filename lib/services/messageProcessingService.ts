@@ -25,6 +25,7 @@ export interface ProcessMessageResult {
   aiProvider: string;
   aiModel: string;
   latencyMs: number;
+  updatedPlan?: Record<string, unknown>;
 }
 
 const DEFAULT_EVENT_ID = "00000000-0000-0000-0000-000000000001";
@@ -166,6 +167,7 @@ export async function processIncomingMessage(
     decisionReason: validation.reason,
     affectedAreas: validation.affectedSections,
     planVersion: updateResult.newVersion,
+    updatedPlan: updateResult.updatedPlan,
     aiProvider: aiResult.provider,
     aiModel: aiResult.model,
     latencyMs: aiResult.response_time_ms,
