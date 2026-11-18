@@ -311,5 +311,40 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome, {name}"
+  },
+  "voice": {
+    "speaker": {
+      "play": "Listen to selection",
+      "stop": "Stop listening",
+      "loading": "Loading voice...",
+      "urduUnavailable": "Urdu voice is not available on this device",
+      "truncatedNote": "Playing first 1,500 characters"
+    },
+    "stt": {
+      "startRecording": "Record voice message",
+      "stopRecording": "Stop recording and transcribe",
+      "recordingActive": "Recording audio: {time}",
+      "recordingLabel": "Listening...",
+      "askingPermission": "Requesting microphone permission...",
+      "transcribing": "Transcribing audio...",
+      "cancel": "Cancel recording",
+      "dismissError": "Dismiss error"
+    },
+    "errors": {
+      "micPermissionDenied": "Microphone permission was denied. Please allow microphone access in your browser site settings.",
+      "noMicrophone": "No microphone found. Please connect an audio input device.",
+      "micAccessFailed": "Unable to access your microphone. Please check your system settings.",
+      "browserNotSupported": "Audio recording is not supported in this browser.",
+      "insecureOrigin": "Microphone access requires a secure HTTPS connection.",
+      "nothingHeard": "No speech detected. Please speak clearly into the microphone.",
+      "playbackFailed": "Audio playback failed. Please try again.",
+      "ttsFailed": "Unable to generate speech. Please try again.",
+      "transcriptionFailed": "Transcription failed. Please try again.",
+      "unsupportedLanguage": "This language is not supported for voice playback.",
+      "urduVoiceUnavailable": "Urdu voice is not available on this device.",
+      "modelTermsRequired": "Model terms acceptance required in Groq console.",
+      "rateLimited": "Voice rate limit reached. Please wait a moment.",
+      "timeout": "Request timed out. Please try again."
+    }
   }
 }

@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/components/providers/LanguageProvider";
 import { HeaderServer } from "@/components/layout/HeaderServer";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ai/ChatWidget";
+import { SelectionSpeaker } from "@/components/voice/SelectionSpeaker";
 import "./globals.css";
 
 const notoNastaliqUrdu = Noto_Nastaliq_Urdu({
@@ -64,6 +65,7 @@ export default function RootLayout({
           </Suspense>
           <Footer />
           <ChatWidget />
+          <SelectionSpeaker />
         </LanguageProvider>
       </body>
     </html>
