@@ -31,7 +31,7 @@ interface EventMindContextType {
   clearActionResult: () => void;
 }
 
-const STORAGE_KEY = "eventmind_workspace_state_v2";
+const STORAGE_KEY = "eventmind_workspace_state_v4";
 const ROLE_STORAGE_KEY = "eventmind_user_role";
 
 const EventMindContext = createContext<EventMindContextType | null>(null);
@@ -60,14 +60,21 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<EventPlanState>(() => {
     if (typeof window === "undefined") return initialEventPlanState;
     try {
+      // Purge legacy storage versions containing previous dummy data
+      localStorage.removeItem("eventmind_workspace_state_v1");
+      localStorage.removeItem("eventmind_workspace_state_v2");
+      localStorage.removeItem("eventmind_workspace_state_v3");
+      localStorage.removeItem("eventmind_plan_v2");
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
           ...initialEventPlanState,
           ...parsed,
-          updateHistory: parsed.updateHistory || initialEventPlanState.updateHistory,
-          notifications: parsed.notifications || initialEventPlanState.notifications,
+          messages: parsed.messages || [],
+          updateHistory: parsed.updateHistory || [],
+          notifications: parsed.notifications || [],
         };
       }
     } catch {
@@ -96,16 +103,51 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     loadSupabaseRole();
   }, []);
 
-  // Hydrate central shared plan & activity history from Supabase backend
+  // Hydrate central shared plan, messages & activity history from Supabase backend
   useEffect(() => {
     async function syncBackendData() {
       try {
-        const [planRes, histRes] = await Promise.all([
+        const [planRes, histRes, msgsRes] = await Promise.all([
           fetch("/api/eventmind/plan").then((r) => (r.ok ? r.json() : null)),
           fetch("/api/eventmind/history").then((r) => (r.ok ? r.json() : null)),
+          fetch("/api/eventmind/messages").then((r) => (r.ok ? r.json() : null)),
         ]);
-        if (planRes?.plan || (histRes?.history && histRes.history.length > 0)) {
-          setState((prev) => ({
+
+        setState((prev) => {
+          interface RawDbMessage {
+            id?: string;
+            sender_name?: string;
+            sender_role?: string;
+            created_at?: string;
+            raw_content?: string;
+            classification?: EventMessage["classification"];
+            decision_status?: EventMessage["decisionStatus"];
+            decision_reason?: string;
+            affected_sections?: AreaTag[];
+          }
+
+          const backendMessages: EventMessage[] =
+            Array.isArray(msgsRes?.messages) && msgsRes.messages.length > 0
+              ? msgsRes.messages.map((m: RawDbMessage, idx: number) => ({
+                  id: m.id || `MSG-${idx}`,
+                  sequence: idx + 1,
+                  sender: m.sender_name || "Contributor",
+                  role: m.sender_role || "Event Organizer",
+                  timestamp:
+                    new Date(m.created_at || Date.now()).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }) + ", Today",
+                  rawText: m.raw_content || "",
+                  language: "en",
+                  classification: m.classification || "confirmed_fact",
+                  decisionStatus: m.decision_status || "accepted",
+                  decisionReason: m.decision_reason || "",
+                  affectedAreas: m.affected_sections || [],
+                }))
+              : prev.messages;
+
+          const updated: EventPlanState = {
             ...prev,
             ...(planRes?.plan
               ? {
@@ -117,12 +159,18 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
                   version: planRes.plan.version || prev.version,
                 }
               : {}),
-            updateHistory:
-              histRes?.history && histRes.history.length > 0
-                ? histRes.history
-                : prev.updateHistory,
-          }));
-        }
+            messages: backendMessages,
+            updateHistory: Array.isArray(histRes?.history) ? histRes.history : prev.updateHistory,
+          };
+
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          } catch {
+            // Ignore quota errors
+          }
+
+          return updated;
+        });
       } catch {
         // Gracefully use local state if offline
       }

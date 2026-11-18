@@ -448,74 +448,91 @@ export default function AgentDashboardPage() {
 
                 {/* Conversation Stream */}
                 <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-                  {state.messages.map((msg) => {
-                    const isAi = !msg.sender || msg.sender === "System" || msg.sender === "EventMind AI";
-                    const isAccepted = msg.decisionStatus === "accepted";
-                    const isRejected = msg.decisionStatus === "rejected";
+                  {state.messages.length === 0 ? (
+                    <div className="h-full min-h-[320px] flex flex-col items-center justify-center text-center p-6 text-neutral-500">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 mb-3 shadow-2xs">
+                        <Bot className="w-6 h-6" />
+                      </div>
+                      <h3 className="font-bold text-neutral-900 text-sm mb-1">
+                        EventMind AI Assistant
+                      </h3>
+                      <p className="text-xs text-neutral-500 max-w-sm mb-4 leading-relaxed">
+                        No messages yet. Ask questions, report updates, or submit event proposals. The AI will validate constraints and update the shared event plan.
+                      </p>
+                      <div className="text-[11px] text-neutral-400">
+                        Select a suggestion above or type a message below to begin.
+                      </div>
+                    </div>
+                  ) : (
+                    state.messages.map((msg) => {
+                      const isAi = !msg.sender || msg.sender === "System" || msg.sender === "EventMind AI";
+                      const isAccepted = msg.decisionStatus === "accepted";
+                      const isRejected = msg.decisionStatus === "rejected";
 
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col ${isAi ? "items-start" : "items-end"}`}
-                      >
-                        {/* Sender Name & Role */}
-                        <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mb-1 px-1">
-                          <span className="font-medium text-neutral-800">
-                            {isAi ? "EventMind AI" : msg.sender}
-                          </span>
-                          {msg.role && (
-                            <span className="bg-neutral-100 text-neutral-600 px-1.5 py-0.2 rounded text-[10px]">
-                              {msg.role}
-                            </span>
-                          )}
-                          <span>•</span>
-                          <span>{msg.timestamp}</span>
-                        </div>
-
-                        {/* Message Bubble */}
+                      return (
                         <div
-                          className={`max-w-[88%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-2xs ${
-                            isAi
-                              ? "bg-neutral-100/90 text-neutral-900 rounded-tl-sm border border-neutral-200/60"
-                              : "bg-emerald-700 text-white rounded-tr-sm"
-                          }`}
+                          key={msg.id}
+                          className={`flex flex-col ${isAi ? "items-start" : "items-end"}`}
                         >
-                          <p className="whitespace-pre-wrap">{msg.rawText}</p>
-                        </div>
+                          {/* Sender Name & Role */}
+                          <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mb-1 px-1">
+                            <span className="font-medium text-neutral-800">
+                              {isAi ? "EventMind AI" : msg.sender}
+                            </span>
+                            {msg.role && (
+                              <span className="bg-neutral-100 text-neutral-600 px-1.5 py-0.2 rounded text-[10px]">
+                                {msg.role}
+                              </span>
+                            )}
+                            <span>•</span>
+                            <span>{msg.timestamp}</span>
+                          </div>
 
-                        {/* AI Decision Rationale Card */}
-                        {msg.decisionReason && (
+                          {/* Message Bubble */}
                           <div
-                            className={`mt-1.5 max-w-[88%] sm:max-w-[80%] rounded-xl p-3 text-[11px] border leading-relaxed flex items-start gap-2 shadow-2xs ${
-                              isRejected
-                                ? "bg-red-50 border-red-200 text-red-900"
-                                : isAccepted
-                                ? "bg-emerald-50 border-emerald-200 text-emerald-950"
-                                : "bg-amber-50 border-amber-200 text-amber-950"
+                            className={`max-w-[88%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-2xs ${
+                              isAi
+                                ? "bg-neutral-100/90 text-neutral-900 rounded-tl-sm border border-neutral-200/60"
+                                : "bg-emerald-700 text-white rounded-tr-sm"
                             }`}
                           >
-                            {isRejected ? (
-                              <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                            ) : isAccepted ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            ) : (
-                              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                            )}
-                            <div>
-                              <div className="font-semibold mb-0.5">
-                                {isRejected
-                                  ? "AI Validator: Proposal Rejected"
-                                  : isAccepted
-                                  ? "AI Assistant: Update Accepted & Synced"
-                                  : "AI Assistant: Review Required"}
-                              </div>
-                              <p>{msg.decisionReason}</p>
-                            </div>
+                            <p className="whitespace-pre-wrap">{msg.rawText}</p>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+
+                          {/* AI Decision Rationale Card */}
+                          {msg.decisionReason && (
+                            <div
+                              className={`mt-1.5 max-w-[88%] sm:max-w-[80%] rounded-xl p-3 text-[11px] border leading-relaxed flex items-start gap-2 shadow-2xs ${
+                                isRejected
+                                  ? "bg-red-50 border-red-200 text-red-900"
+                                  : isAccepted
+                                  ? "bg-emerald-50 border-emerald-200 text-emerald-950"
+                                  : "bg-amber-50 border-amber-200 text-amber-950"
+                              }`}
+                            >
+                              {isRejected ? (
+                                <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                              ) : isAccepted ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              )}
+                              <div>
+                                <div className="font-semibold mb-0.5">
+                                  {isRejected
+                                    ? "AI Validator: Proposal Rejected"
+                                    : isAccepted
+                                    ? "AI Assistant: Update Accepted & Synced"
+                                    : "AI Assistant: Review Required"}
+                                </div>
+                                <p>{msg.decisionReason}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
 
                   {/* AI Processing State Indicator */}
                   {isProcessing && (
@@ -995,8 +1012,16 @@ export default function AgentDashboardPage() {
                 ))}
 
                 {filteredUpdates.length === 0 && (
-                  <div className="text-center py-12 text-neutral-400 text-xs">
-                    No activity updates found matching status &ldquo;{statusFilter}&rdquo;.
+                  <div className="text-center py-16 text-neutral-400 text-xs flex flex-col items-center justify-center">
+                    <Clock className="w-8 h-8 text-neutral-300 mb-2" />
+                    <span className="font-semibold text-neutral-600">
+                      {statusFilter === "All"
+                        ? "No activity updates recorded yet"
+                        : `No activity updates found matching "${statusFilter}"`}
+                    </span>
+                    <span className="text-[11px] text-neutral-400 mt-1">
+                      When you or team members submit proposals, AI validations and plan modifications will appear here.
+                    </span>
                   </div>
                 )}
               </div>
