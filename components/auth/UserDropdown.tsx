@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { LogOut, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { useTranslation } from "@/components/providers/LanguageProvider";
 
@@ -119,6 +120,15 @@ export function UserDropdown({ email, fullName, avatarUrl }: UserDropdownProps) 
 
           {/* Actions */}
           <div className="py-1">
+            <Link
+              href="/dashboard"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-surface transition-colors text-start"
+            >
+              <LayoutDashboard className="w-4 h-4 text-primary shrink-0" />
+              <span>Agent Workspace</span>
+            </Link>
+
             <button
               type="button"
               onClick={handleLogout}

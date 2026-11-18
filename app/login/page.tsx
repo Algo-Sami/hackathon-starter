@@ -24,11 +24,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   const resolvedParams = await searchParams;
-  const next = resolvedParams.next || "/";
+  const next = resolvedParams.next || "/dashboard";
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center py-12 sm:py-16 px-4 bg-surface relative">
