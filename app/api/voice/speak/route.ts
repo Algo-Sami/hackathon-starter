@@ -151,14 +151,23 @@ export async function POST(request: NextRequest) {
       status?: number;
       code?: string;
       message?: string;
-      error?: { code?: string; message?: string };
+      error?: { code?: string; message?: string; error?: { code?: string; message?: string } };
     }
 
     const err = error as ApiErrorLike;
     const statusCode = err.status || 500;
-    const errCode = err.code || err.error?.code || "";
+    const errMessage = err.message || "";
+    const errCode =
+      err.code ||
+      err.error?.code ||
+      err.error?.error?.code ||
+      "";
 
-    if (errCode === "model_terms_required" || (err.message && err.message.includes("model_terms_required"))) {
+    if (
+      errCode === "model_terms_required" ||
+      errMessage.includes("model_terms_required") ||
+      errMessage.includes("requires terms acceptance")
+    ) {
       return NextResponse.json(
         {
           error:
@@ -169,7 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (statusCode === 401) {
+    if (statusCode === 401 || errMessage.includes("API key")) {
       return NextResponse.json(
         { error: "Authentication failed with speech provider", code: "auth_error" },
         { status: 401 }
@@ -182,6 +191,8 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
+
+    console.error("[Voice TTS error]", errMessage || errCode || "Unknown error");
 
     return NextResponse.json(
       { error: "Failed to generate speech", code: "server_error" },
