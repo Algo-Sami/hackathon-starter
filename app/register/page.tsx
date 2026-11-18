@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Square, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { siteConfig } from "@/config/site";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { AuthCardHeader } from "@/components/auth/AuthCardHeader";
+import { BackToHomeLink } from "@/components/auth/BackToHomeLink";
 import { getServerTranslation } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
@@ -24,8 +23,6 @@ export default async function RegisterPage() {
     redirect("/");
   }
 
-  const { t } = await getServerTranslation();
-
   return (
     <div className="flex-1 flex flex-col items-center justify-center py-12 sm:py-16 px-4 bg-surface relative">
       {/* Top right language switcher on auth page */}
@@ -35,26 +32,10 @@ export default async function RegisterPage() {
 
       <div className="w-full max-w-[400px]">
         {/* Header: Logo + Title above card */}
-        <div className="text-center mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 group mb-3 focus:outline-none"
-            aria-label={`${siteConfig.name} Home`}
-          >
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold text-sm shadow-xs group-hover:bg-primary-hover transition-colors">
-              <Square className="w-4 h-4 fill-white text-white" />
-            </div>
-            <span className="font-semibold text-xl tracking-tight text-foreground">
-              {siteConfig.name}
-            </span>
-          </Link>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">
-            {t("auth.register.title")}
-          </h1>
-          <p className="text-xs text-muted mt-1">
-            {t("auth.register.subtitle")}
-          </p>
-        </div>
+        <AuthCardHeader
+          titleKey="auth.register.title"
+          subtitleKey="auth.register.subtitle"
+        />
 
         {/* Form Card */}
         <div className="bg-background border border-border rounded p-6 sm:p-7 shadow-xs">
@@ -62,15 +43,7 @@ export default async function RegisterPage() {
         </div>
 
         {/* Back to Home */}
-        <div className="text-center mt-5">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 rtl-flip" />
-            <span>{t("auth.register.backHome")}</span>
-          </Link>
-        </div>
+        <BackToHomeLink textKey="auth.register.backHome" />
       </div>
     </div>
   );

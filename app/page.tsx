@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Compass, Target, Mail, Phone, MapPin, Clock } from "lucide-react";
 import {
@@ -8,9 +10,10 @@ import {
 } from "@/config/content";
 import { siteConfig } from "@/config/site";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
 
 export default function HomePage() {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col w-full">
       {/* 1. Hero Portion */}

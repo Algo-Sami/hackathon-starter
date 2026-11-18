@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Square, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { siteConfig } from "@/config/site";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { AuthCardHeader } from "@/components/auth/AuthCardHeader";
+import { BackToHomeLink } from "@/components/auth/BackToHomeLink";
 import { getServerTranslation } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
@@ -28,7 +27,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect("/");
   }
 
-  const { t } = await getServerTranslation();
   const resolvedParams = await searchParams;
   const next = resolvedParams.next || "/";
 
@@ -41,26 +39,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <div className="w-full max-w-[400px]">
         {/* Header with Logo and Title above the card */}
-        <div className="text-center mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 group mb-3 focus:outline-none"
-            aria-label={`${siteConfig.name} Home`}
-          >
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold text-sm shadow-xs group-hover:bg-primary-hover transition-colors">
-              <Square className="w-4 h-4 fill-white text-white" />
-            </div>
-            <span className="font-semibold text-xl tracking-tight text-foreground">
-              {siteConfig.name}
-            </span>
-          </Link>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">
-            {t("auth.login.title")}
-          </h1>
-          <p className="text-xs text-muted mt-1">
-            {t("auth.login.subtitle")}
-          </p>
-        </div>
+        <AuthCardHeader
+          titleKey="auth.login.title"
+          subtitleKey="auth.login.subtitle"
+        />
 
         {/* Form Card */}
         <div className="bg-background border border-border rounded p-6 sm:p-7 shadow-xs">
@@ -68,15 +50,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
 
         {/* Back to Home Link */}
-        <div className="text-center mt-5">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 rtl-flip" />
-            <span>{t("auth.login.backHome")}</span>
-          </Link>
-        </div>
+        <BackToHomeLink textKey="auth.login.backHome" />
       </div>
     </div>
   );
