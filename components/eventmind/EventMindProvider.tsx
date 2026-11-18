@@ -57,6 +57,25 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     return "Event Organizer";
   });
 
+  const [state, setState] = useState<EventPlanState>(() => {
+    if (typeof window === "undefined") return initialEventPlanState;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...initialEventPlanState,
+          ...parsed,
+          updateHistory: parsed.updateHistory || initialEventPlanState.updateHistory,
+          notifications: parsed.notifications || initialEventPlanState.notifications,
+        };
+      }
+    } catch {
+      // Fallback
+    }
+    return initialEventPlanState;
+  });
+
   // Retrieve authenticated user's role from Supabase metadata on mount
   useEffect(() => {
     async function loadSupabaseRole() {
@@ -77,24 +96,39 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     loadSupabaseRole();
   }, []);
 
-  const [state, setState] = useState<EventPlanState>(() => {
-    if (typeof window === "undefined") return initialEventPlanState;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          ...initialEventPlanState,
-          ...parsed,
-          updateHistory: parsed.updateHistory || initialEventPlanState.updateHistory,
-          notifications: parsed.notifications || initialEventPlanState.notifications,
-        };
+  // Hydrate central shared plan & activity history from Supabase backend
+  useEffect(() => {
+    async function syncBackendData() {
+      try {
+        const [planRes, histRes] = await Promise.all([
+          fetch("/api/eventmind/plan").then((r) => (r.ok ? r.json() : null)),
+          fetch("/api/eventmind/history").then((r) => (r.ok ? r.json() : null)),
+        ]);
+        if (planRes?.plan || (histRes?.history && histRes.history.length > 0)) {
+          setState((prev) => ({
+            ...prev,
+            ...(planRes?.plan
+              ? {
+                  venue: planRes.plan.venue || prev.venue,
+                  food: planRes.plan.food || prev.food,
+                  budget: planRes.plan.budget || prev.budget,
+                  schedule: planRes.plan.schedule || prev.schedule,
+                  judging: planRes.plan.judging || prev.judging,
+                  version: planRes.plan.version || prev.version,
+                }
+              : {}),
+            updateHistory:
+              histRes?.history && histRes.history.length > 0
+                ? histRes.history
+                : prev.updateHistory,
+          }));
+        }
+      } catch {
+        // Gracefully use local state if offline
       }
-    } catch {
-      // Use baseline if corrupted
     }
-    return initialEventPlanState;
-  });
+    syncBackendData();
+  }, []);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastActionResult, setLastActionResult] = useState<{
@@ -147,91 +181,120 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     const activeRole = roleOverride || currentUserRole;
     const authorName = sender || `${activeRole} Member`;
 
-    // Simulate short processing delay (responsive AI feel)
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    // Dispatch to real backend API (Multi-provider fallback: Gemini -> Groq -> OpenAI -> Queue)
+    let backendResult: {
+      success?: boolean;
+      messageId?: string;
+      senderName?: string;
+      senderRole?: string;
+      rawText?: string;
+      classification?: EventMessage["classification"];
+      decisionStatus?: EventMessage["decisionStatus"];
+      decisionReason?: string;
+      affectedAreas?: AreaTag[];
+      planVersion?: number;
+      historyId?: string;
+    } | null = null;
+    try {
+      const apiRes = await fetch("/api/eventmind/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: rawText,
+          userRole: activeRole,
+          senderName: authorName,
+        }),
+      });
+      if (apiRes.ok) {
+        backendResult = await apiRes.json();
+      }
+    } catch {
+      // Fallback to local deterministic execution if offline
+    }
 
     const nextSeq = state.messages.length + 1;
-    const msgId = `MSG-00${nextSeq}`;
+    const msgId = backendResult?.messageId || `MSG-00${nextSeq}`;
     const timestamp =
       new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today";
     const textLower = rawText.toLowerCase();
 
-    let classification: EventMessage["classification"] = "confirmed_fact";
-    let decisionStatus: EventMessage["decisionStatus"] = "accepted";
-    let decisionReason = "Valid message processed. Recomputed dependent facts.";
-    let affectedAreas: AreaTag[] = ["budget"];
-    let isInvalidProposal = false;
+    let classification: EventMessage["classification"] =
+      backendResult?.classification || "confirmed_fact";
+    let decisionStatus: EventMessage["decisionStatus"] =
+      backendResult?.decisionStatus || "accepted";
+    let decisionReason =
+      backendResult?.decisionReason || "Valid message processed. Recomputed dependent facts.";
+    let affectedAreas: AreaTag[] =
+      backendResult?.affectedAreas || ["budget"];
+    let isInvalidProposal = decisionStatus === "rejected";
     let sectionTag: PlanUpdateEvent["section"] = "General";
     let previousVal: string | undefined = undefined;
     let newVal: string | undefined = undefined;
     let targetNotifRoles: EventMindRole[] = ["Event Organizer"];
 
-    // ── Intelligent Deterministic Rule Engine (Aligned with prompt requirements) ──
-    if (
-      (textLower.includes("100") || textLower.includes("kam") || textLower.includes("bachat")) &&
-      (textLower.includes("box") ||
-        textLower.includes("biryani") ||
-        textLower.includes("khana") ||
-        textLower.includes("food") ||
-        textLower.includes("lunch"))
-    ) {
-      // 1. Hard constraint violation: food headcount reduction below 177
-      classification = "invalid_proposal";
-      decisionStatus = "rejected";
-      isInvalidProposal = true;
-      sectionTag = "Catering";
-      decisionReason =
-        "REJECTED: Proposal violates hard constraint of 177 meals (150 students + 10 staff + 17 judges). Shortfall of 77 meals creates severe shortage. Existing verified headcount preserved.";
-      affectedAreas = ["food"];
-      previousVal = "Mandatory requirement: 177 meals";
-      newVal = "Proposed: 100 lunch boxes";
-      targetNotifRoles = ["Event Organizer", "Dean", "Catering Person"];
-    } else if (
-      activeRole === "Catering Person" ||
-      textLower.includes("lunch price") ||
-      textLower.includes("per person") ||
-      textLower.includes("catering") ||
-      (textLower.includes("price") && textLower.includes("1200"))
-    ) {
-      // 2. Catering price update (e.g., Rs 1,000 -> Rs 1,200)
-      classification = "update";
-      decisionStatus = "accepted";
-      sectionTag = "Catering";
-      affectedAreas = ["food", "budget"];
-
-      const extractedPrice = textLower.includes("1200") ? 1200 : state.food.unitPrice;
-      const oldPrice = state.food.unitPrice;
-      previousVal = `Standard Lunch: Rs ${oldPrice.toLocaleString()} / head`;
-      newVal = `Standard Lunch: Rs ${extractedPrice.toLocaleString()} / head`;
-      decisionReason = `ACCEPTED: Standard lunch price updated to Rs ${extractedPrice.toLocaleString()} per person. Food total recalculated to Rs ${(
-        extractedPrice * state.food.headcount +
-        state.food.deliveryCharges
-      ).toLocaleString()}. Total budget recomputed; Finance Person notified.`;
-      targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
-    } else if (
-      activeRole === "Finance Person" ||
-      textLower.includes("printing") ||
-      textLower.includes("flex") ||
-      textLower.includes("banner") ||
-      (textLower.includes("invoice") && textLower.includes("15000"))
-    ) {
-      // 3. Printing / Merchandise bill update (e.g., Rs 10,000 -> Rs 15,000)
-      classification = "update";
-      decisionStatus = "accepted";
-      sectionTag = "Budget";
-      affectedAreas = ["budget"];
-      const oldPrinting = 10000;
-      const newPrinting = textLower.includes("15000") || textLower.includes("15,000") ? 15000 : 12000;
-      previousVal = `Printing / Flex: Rs ${oldPrinting.toLocaleString()}`;
-      newVal = `Printing / Flex: Rs ${newPrinting.toLocaleString()}`;
-      decisionReason = `ACCEPTED: Printing invoice adjusted to Rs ${newPrinting.toLocaleString()}. Budget committed increased by Rs ${(
-        newPrinting - oldPrinting
-      ).toLocaleString()}. Verified within Dean's ceiling of Rs 650,000.`;
-      targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
-    } else if (
-      textLower.includes("room d") ||
-      (textLower.includes("room-d") && (textLower.includes("small") || textLower.includes("reject")))
-    ) {
+    if (!backendResult) {
+      // Client-side fallback rule engine when server API is unreachable
+      if (
+        (textLower.includes("100") || textLower.includes("kam") || textLower.includes("bachat")) &&
+        (textLower.includes("box") ||
+          textLower.includes("biryani") ||
+          textLower.includes("khana") ||
+          textLower.includes("food") ||
+          textLower.includes("lunch"))
+      ) {
+        classification = "invalid_proposal";
+        decisionStatus = "rejected";
+        isInvalidProposal = true;
+        sectionTag = "Catering";
+        decisionReason =
+          "REJECTED: Proposal violates hard constraint of 177 meals (150 students + 10 staff + 17 judges). Shortfall of 77 meals creates severe shortage. Existing verified headcount preserved.";
+        affectedAreas = ["food"];
+        previousVal = "Mandatory requirement: 177 meals";
+        newVal = "Proposed: 100 lunch boxes";
+        targetNotifRoles = ["Event Organizer", "Dean", "Catering Person"];
+      } else if (
+        activeRole === "Catering Person" ||
+        textLower.includes("lunch price") ||
+        textLower.includes("per person") ||
+        textLower.includes("catering") ||
+        (textLower.includes("price") && textLower.includes("1200"))
+      ) {
+        classification = "update";
+        decisionStatus = "accepted";
+        sectionTag = "Catering";
+        affectedAreas = ["food", "budget"];
+        const extractedPrice = textLower.includes("1200") ? 1200 : state.food.unitPrice;
+        const oldPrice = state.food.unitPrice;
+        previousVal = `Standard Lunch: Rs ${oldPrice.toLocaleString()} / head`;
+        newVal = `Standard Lunch: Rs ${extractedPrice.toLocaleString()} / head`;
+        decisionReason = `ACCEPTED: Standard lunch price updated to Rs ${extractedPrice.toLocaleString()} per person. Food total recalculated to Rs ${(
+          extractedPrice * state.food.headcount +
+          state.food.deliveryCharges
+        ).toLocaleString()}. Total budget recomputed; Finance Person notified.`;
+        targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
+      } else if (
+        activeRole === "Finance Person" ||
+        textLower.includes("printing") ||
+        textLower.includes("flex") ||
+        textLower.includes("banner") ||
+        (textLower.includes("invoice") && textLower.includes("15000"))
+      ) {
+        classification = "update";
+        decisionStatus = "accepted";
+        sectionTag = "Budget";
+        affectedAreas = ["budget"];
+        const oldPrinting = 10000;
+        const newPrinting = textLower.includes("15000") || textLower.includes("15,000") ? 15000 : 12000;
+        previousVal = `Printing / Flex: Rs ${oldPrinting.toLocaleString()}`;
+        newVal = `Printing / Flex: Rs ${newPrinting.toLocaleString()}`;
+        decisionReason = `ACCEPTED: Printing invoice adjusted to Rs ${newPrinting.toLocaleString()}. Budget committed increased by Rs ${(
+          newPrinting - oldPrinting
+        ).toLocaleString()}. Verified within Dean's ceiling of Rs 650,000.`;
+        targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
+      } else if (
+        textLower.includes("room d") ||
+        (textLower.includes("room-d") && (textLower.includes("small") || textLower.includes("reject")))
+      ) {
       // 4. Venue capacity check rejection
       classification = "invalid_proposal";
       decisionStatus = "rejected";
@@ -292,6 +355,14 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
         "ACCEPTED: Dean directive locked: Total budget ceiling established at Rs 650,000 and 15-minute Asr prayer break strictly enforced.";
       targetNotifRoles = ["Event Organizer", "Finance Person", "Venue Manager"];
     }
+  } else {
+    const areas = (backendResult.affectedAreas as string[]) || [];
+    if (areas.includes("Catering") || areas.includes("food")) sectionTag = "Catering";
+    else if (areas.includes("Venue") || areas.includes("venue")) sectionTag = "Venue";
+    else if (areas.includes("Budget") || areas.includes("budget")) sectionTag = "Budget";
+    else if (areas.includes("Schedule") || areas.includes("schedule")) sectionTag = "Schedule";
+    else if (areas.includes("Judging") || areas.includes("judging")) sectionTag = "Judging";
+  }
 
     // Build the user message
     const newMessage: EventMessage = {
@@ -460,7 +531,21 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     setIsProcessing(true);
     setLastActionResult(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    // Call real backend upload API
+    try {
+      const formData = new FormData();
+      const blob = new Blob([fileContent], { type: "text/plain" });
+      formData.append("file", blob, fileName);
+      formData.append("userRole", currentUserRole);
+      formData.append("senderName", `${currentUserRole} Lead`);
+
+      await fetch("/api/eventmind/upload", {
+        method: "POST",
+        body: formData,
+      });
+    } catch {
+      // Non-blocking upload fallback
+    }
 
     const lines = fileContent
       .split("\n")

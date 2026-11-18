@@ -46,6 +46,13 @@ export function useSelectionSpeech() {
   const [isTruncated, setIsTruncated] = useState(false);
   const [hasUrduVoice, setHasUrduVoice] = useState(checkSystemUrduVoice);
 
+  // Auto-dismiss transient errors after 4.5 seconds
+  useEffect(() => {
+    if (!errorKey) return;
+    const timer = setTimeout(() => setErrorKey(null), 4500);
+    return () => clearTimeout(timer);
+  }, [errorKey]);
+
   // ── 2. Refs ──────────────────────────────────────────────────────────────────
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -98,10 +105,9 @@ export function useSelectionSpeech() {
       audio.onended = null;
       audio.onerror = null;
       audio.onplay = null;
-      audio.pause();
       try {
-        audio.removeAttribute("src");
-        audio.load();
+        audio.pause();
+        audio.src = "";
       } catch {
         // Ignore element cleanup errors
       }
@@ -165,6 +171,7 @@ export function useSelectionSpeech() {
 
       const queue = chunksQueueRef.current;
       if (index >= queue.length) {
+        setErrorKey(null);
         stop();
         return;
       }
@@ -195,7 +202,10 @@ export function useSelectionSpeech() {
           });
         }
 
-        audio.onplay = () => setIsLoading(false);
+        audio.onplay = () => {
+          setIsLoading(false);
+          setErrorKey(null);
+        };
 
         audio.onended = () => {
           audio.onended = null;
@@ -205,13 +215,35 @@ export function useSelectionSpeech() {
 
         audio.onerror = () => {
           if (!isPlayingRef.current) return;
+
+          // If the audio already finished or is within 0.5s of the end (common Chromium Lavf WAV EOF glitch),
+          // treat as normal completion rather than playback failure
+          if (
+            audio.ended ||
+            (audio.duration > 0 &&
+              audio.currentTime >= Math.max(0, audio.duration - 0.5))
+          ) {
+            audio.onended = null;
+            audio.onerror = null;
+            void playNextChunkRef.current(index + 1);
+            return;
+          }
+
           setErrorKey("voice.errors.playbackFailed");
           stop();
         };
 
         await audio.play();
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === "AbortError") return;
+        const isAbort =
+          (err instanceof Error && err.name === "AbortError") ||
+          (typeof err === "object" &&
+            err !== null &&
+            (err as { name?: string }).name === "AbortError") ||
+          (err instanceof Error && err.message?.includes("aborted")) ||
+          (err instanceof Error && err.message?.includes("interrupted"));
+
+        if (isAbort) return;
 
         const code =
           err instanceof Error ? err.message : "server_error";
@@ -429,6 +461,7 @@ export function useSelectionSpeech() {
         utterance.onend = () => {
           utterance.onend = null;
           utterance.onerror = null;
+          setErrorKey(null);
           stop();
         };
         utterance.onerror = (e) => {
