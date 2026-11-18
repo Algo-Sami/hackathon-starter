@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
 
 interface FormData {
   name: string;
@@ -19,6 +19,7 @@ interface FormErrors {
 }
 
 export function ContactForm() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",

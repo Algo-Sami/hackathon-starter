@@ -14,7 +14,10 @@
     "langEn": "EN",
     "langUr": "اردو",
     "openMenu": "Open main menu",
-    "closeMenu": "Close main menu"
+    "closeMenu": "Close main menu",
+    "switchToEn": "Switch to English",
+    "switchToUr": "Switch to Urdu",
+    "languageSelection": "Language selection"
   },
   "home": {
     "hero": {
@@ -292,5 +295,21 @@
       "chip2": "How do I get started?",
       "chip3": "Where can I contact support?"
     }
+  },
+  "meta": {
+    "homeTitle": "Home",
+    "homeDescription": "A modern foundation for your next big idea.",
+    "aboutTitle": "About",
+    "featuresTitle": "Features",
+    "contactTitle": "Contact",
+    "loginTitle": "Log In",
+    "registerTitle": "Sign Up",
+    "forgotPasswordTitle": "Reset Password",
+    "resetPasswordTitle": "Set New Password",
+    "notFoundTitle": "Page Not Found"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {name}"
   }
 }

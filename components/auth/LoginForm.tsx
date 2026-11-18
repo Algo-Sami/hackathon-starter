@@ -9,9 +9,10 @@ import {
   GoogleRecaptcha,
   type GoogleRecaptchaRef,
 } from "@/components/auth/GoogleRecaptcha";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
 
 export function LoginForm({ next = "/" }: { next?: string }) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -165,7 +166,7 @@ export function LoginForm({ next = "/" }: { next?: string }) {
             placeholder={t("auth.login.passwordPlaceholder")}
             aria-invalid={!!fieldErrors.password}
             aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
-            className={`w-full text-sm bg-surface border rounded px-3.5 py-2 pr-10 text-foreground placeholder:text-muted transition-colors focus:bg-background focus:outline-none ${
+            className={`w-full text-sm bg-surface border rounded ps-3.5 pe-10 py-2 text-foreground placeholder:text-muted transition-colors focus:bg-background focus:outline-none ${
               fieldErrors.password
                 ? "border-red-500 focus:border-red-500"
                 : "border-border focus:border-primary"
@@ -179,7 +180,7 @@ export function LoginForm({ next = "/" }: { next?: string }) {
                 ? t("auth.login.hidePassword")
                 : t("auth.login.showPassword")
             }
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground rounded focus:outline-none"
+            className="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-foreground rounded focus:outline-none"
           >
             {showPassword ? (
               <EyeOff className="w-4 h-4" />

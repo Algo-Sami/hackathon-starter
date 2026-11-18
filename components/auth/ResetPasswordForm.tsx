@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, CheckCircle } from "lucide-react";
 import { resetPasswordAction } from "@/app/actions/auth";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
 
 export function ResetPasswordForm() {
+  const { t } = useTranslation();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -79,7 +80,7 @@ export function ResetPasswordForm() {
             placeholder={t("auth.resetPassword.newPasswordPlaceholder")}
             aria-describedby={error ? errorId : undefined}
             aria-invalid={!!error}
-            className="w-full pl-3 pr-10 h-10 text-sm border border-border rounded bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            className="w-full ps-3.5 pe-10 h-10 text-sm border border-border rounded bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           />
           <button
             type="button"
@@ -89,7 +90,7 @@ export function ResetPasswordForm() {
                 ? t("auth.resetPassword.hidePassword")
                 : t("auth.resetPassword.showPassword")
             }
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
+            className="absolute end-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
           >
             {showPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -116,7 +117,7 @@ export function ResetPasswordForm() {
             autoComplete="new-password"
             required
             placeholder={t("auth.resetPassword.confirmPasswordPlaceholder")}
-            className="w-full pl-3 pr-10 h-10 text-sm border border-border rounded bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            className="w-full ps-3.5 pe-10 h-10 text-sm border border-border rounded bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           />
           <button
             type="button"
@@ -126,7 +127,7 @@ export function ResetPasswordForm() {
                 ? t("auth.resetPassword.hidePassword")
                 : t("auth.resetPassword.showPassword")
             }
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
+            className="absolute end-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
           >
             {showConfirm ? (
               <EyeOff className="w-4 h-4" />

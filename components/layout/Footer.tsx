@@ -1,12 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { Square, Mail, Phone, MapPin } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { footerSections } from "@/config/content";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
 
 const COPYRIGHT_YEAR = 2026;
 
 export function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className="w-full bg-background border-t border-border mt-auto">
       <div className="site-container py-12 lg:py-16">
@@ -61,7 +65,8 @@ export function Footer() {
                 <Mail className="w-4 h-4 text-muted shrink-0 mt-0.5" />
                 <a
                   href={`mailto:${siteConfig.contact.email}`}
-                  className="hover:text-foreground transition-colors break-all"
+                  dir="ltr"
+                  className="hover:text-foreground transition-colors break-all ltr-isolate"
                 >
                   {siteConfig.contact.email}
                 </a>
@@ -70,7 +75,8 @@ export function Footer() {
                 <Phone className="w-4 h-4 text-muted shrink-0" />
                 <a
                   href={`tel:${siteConfig.contact.phone.replace(/[^0-9+]/g, "")}`}
-                  className="hover:text-foreground transition-colors"
+                  dir="ltr"
+                  className="hover:text-foreground transition-colors ltr-isolate"
                 >
                   {siteConfig.contact.phone}
                 </a>

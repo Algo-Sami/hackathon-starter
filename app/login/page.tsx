@@ -4,11 +4,15 @@ import { Square, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { siteConfig } from "@/config/site";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { t } from "@/lib/i18n";
+import { getServerTranslation } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
-export const metadata = {
-  title: "Log In",
-};
+export async function generateMetadata() {
+  const { t } = await getServerTranslation();
+  return {
+    title: t("auth.login.title"),
+  };
+}
 
 interface LoginPageProps {
   searchParams: Promise<{ next?: string; error?: string }>;
@@ -24,11 +28,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect("/");
   }
 
+  const { t } = await getServerTranslation();
   const resolvedParams = await searchParams;
   const next = resolvedParams.next || "/";
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-12 sm:py-16 px-4 bg-surface">
+    <div className="flex-1 flex flex-col items-center justify-center py-12 sm:py-16 px-4 bg-surface relative">
+      {/* Top right language switcher on auth page */}
+      <div className="absolute top-4 end-4">
+        <LanguageSwitcher size="sm" />
+      </div>
+
       <div className="w-full max-w-[400px]">
         {/* Header with Logo and Title above the card */}
         <div className="text-center mb-6">
@@ -63,7 +73,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5 rtl-flip" />
             <span>{t("auth.login.backHome")}</span>
           </Link>
         </div>

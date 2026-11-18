@@ -1,296 +1,315 @@
 {
   "site": {
-    "name": "",
-    "tagline": "",
-    "description": ""
+    "name": "YourApp",
+    "tagline": "آپ کی اگلی پروڈکٹ کے لیے ایک شفاف اور جدید بنیاد۔",
+    "description": "ایک دوبارہ قابلِ استعمال، پروڈکشن کے لیے تیار اسٹارٹر جو Next.js App Router، TypeScript اور Tailwind CSS سے بنایا گیا ہے۔"
   },
   "nav": {
-    "home": "",
-    "about": "",
-    "features": "",
-    "contact": "",
-    "login": "",
-    "signup": "",
-    "langEn": "",
-    "langUr": "",
-    "openMenu": "",
-    "closeMenu": ""
+    "home": "ہوم",
+    "about": "ہمارے بارے میں",
+    "features": "خصوصیات",
+    "contact": "رابطہ",
+    "login": "لاگ ان",
+    "signup": "سائن اپ",
+    "langEn": "EN",
+    "langUr": "اردو",
+    "openMenu": "مین مینو کھولیں",
+    "closeMenu": "مین مینو بند کریں",
+    "switchToEn": "انگریزی میں تبدیل کریں",
+    "switchToUr": "اردو میں تبدیل کریں",
+    "languageSelection": "زبان کا انتخاب"
   },
   "home": {
     "hero": {
-      "badge": "",
-      "title": "",
-      "subtitle": "",
-      "getStarted": "",
-      "learnMore": ""
+      "badge": "جدید اسٹارٹر",
+      "title": "آپ کے اگلے بڑے آئیڈیا کے لیے ایک جدید بنیاد۔",
+      "subtitle": "تیز رفتاری سے بنائیں اور شفاف، پروڈکشن ریڈی فن تعمیر کے ساتھ اعتماد سے وسعت دیں۔",
+      "getStarted": "شروع کریں",
+      "learnMore": "مزید جانیں"
     },
     "features": {
-      "sectionTitle": "",
-      "sectionSubtitle": "",
+      "sectionTitle": "سادگی اور وسعت کے لیے ڈیزائن کردہ",
+      "sectionSubtitle": "پروٹوٹائپ سے پروڈکشن تک پہنچنے کے لیے ہر ضروری چیز، بغیر کسی غیر ضروری پیچیدگی کے۔",
       "items": {
         "fast": {
-          "title": "",
-          "description": ""
+          "title": "تیز رفتار اور ہلکا پھلکا",
+          "description": "کم سے کم بنڈل سائز اور بجلی کی رفتار جیسی رینڈرنگ کارکردگی کے لیے تیار کردہ۔"
         },
         "modular": {
-          "title": "",
-          "description": ""
+          "title": "ماڈیولر فن تعمیر",
+          "description": "بنیادی منطق کو چھیڑے بغیر اجزاء، کنفیگریشنز اور متن کو آسانی سے تبدیل کریں۔"
         },
         "accessible": {
-          "title": "",
-          "description": ""
+          "title": "قابلِ رسائی اور شفاف",
+          "description": "سیمنٹک HTML، اعلیٰ کنٹراسٹ اور کی بورڈ نیویگیشن سپورٹ کے ساتھ تعمیر شدہ۔"
         }
       }
     },
     "howItWorks": {
-      "sectionTitle": "",
-      "sectionSubtitle": "",
+      "sectionTitle": "یہ کیسے کام کرتا ہے",
+      "sectionSubtitle": "اپنے تصور کو آئیڈیا سے پروڈکشن تعیناتی تک لے جانے کے لیے تین آسان مراحل۔",
       "step1": {
-        "title": "",
-        "description": ""
+        "title": "ضروریات کا تعین کریں",
+        "description": "ہمارے معیاری نمونوں کا استعمال کرتے ہوئے اپنے ڈیٹا ماڈل اور صارف کے بہاؤ کو ترتیب دیں۔"
       },
       "step2": {
-        "title": "",
-        "description": ""
+        "title": "اپنی مرضی کے مطابق بنائیں اور جوڑیں",
+        "description": "تھیم کے ٹوکنز ترتیب دیں، عارضی متن کو تبدیل کریں، اور اپنے بیک اینڈ APIs کو جوڑیں۔"
       },
       "step3": {
-        "title": "",
-        "description": ""
+        "title": "اعتماد کے ساتھ تعینات کریں",
+        "description": "خودکار توثیق اور ریسپانسیو انٹرفیس کے ساتھ پروڈکشن بلڈز ریلیز کریں۔"
       }
     },
     "cta": {
-      "title": "",
-      "subtitle": "",
-      "button": ""
+      "title": "اپنی اگلی پروڈکٹ بنانے کے لیے تیار ہیں؟",
+      "subtitle": "آج ہی ہمارے اسٹارٹر ٹیمپلیٹ کے ساتھ شروعات کریں اور اپنے ترقیاتی سفر کو تیز بنائیں۔",
+      "button": "ابھی شروع کریں"
     }
   },
   "about": {
     "hero": {
-      "title": "",
-      "subtitle": ""
+      "title": "ہمارے پلیٹ فارم کے بارے میں",
+      "subtitle": "ہم سافٹ ویئر کے مستقبل کی تعمیر کرنے والی باہمت ٹیموں کے لیے مضبوط بنیاد فراہم کرتے ہیں۔"
     },
     "mission": {
-      "title": "",
-      "text": ""
+      "title": "ہمارا مشن",
+      "text": "ہمارا مشن بوائلر پلیٹ کی الجھنوں کو ختم کر کے صاف اور بہترین فن تعمیر والے اسٹارٹرز فراہم کرنا ہے۔ ہم مانتے ہیں کہ عظیم پروڈکٹس کا آغاز شاندار ڈویلپر تجربے اور پائیدار فن تعمیر سے ہوتا ہے۔"
     },
     "goal": {
-      "title": "",
-      "text": ""
+      "title": "ہمارا مقصد",
+      "text": "ہماری کوشش ہے کہ تخلیق کاروں، ڈویلپرز اور تنظیموں کو مہینوں کے بجائے دنوں میں اعلیٰ معیار کی ڈیجیٹل مصنوعات شروع کرنے کے قابل بنائیں، جس میں کارکردگی، رسائی اور پائیداری کے سخت معیارات برقرار رہیں۔"
     },
     "team": {
-      "title": "",
-      "subtitle": "",
+      "title": "ہماری ٹیم",
+      "subtitle": "پلیٹ فارم کے ڈیزائن اور انجینئرنگ کے پیچھے پرعزم اور باصلاحیت ٹیم۔",
       "members": {
         "member1": {
-          "name": "",
-          "role": "",
-          "initials": ""
+          "name": "سارہ جینکنز",
+          "role": "پروڈکٹ آرکیٹیکٹ",
+          "initials": "SJ"
         },
         "member2": {
-          "name": "",
-          "role": "",
-          "initials": ""
+          "name": "ایلکس رویرا",
+          "role": "لیڈ سسٹمز انجینئر",
+          "initials": "AR"
         },
         "member3": {
-          "name": "",
-          "role": "",
-          "initials": ""
+          "name": "مایا پٹیل",
+          "role": "سربراہ برائے ڈیزائن",
+          "initials": "MP"
         }
       }
     }
   },
   "featuresPage": {
     "hero": {
-      "title": "",
-      "subtitle": ""
+      "title": "خصوصیات اور صلاحیتیں",
+      "subtitle": "جدید ویب ایپلی کیشنز کے لیے ضروری ٹولز اور فن تعمیر کا ایک جامع اور مربوط مجموعہ۔"
     },
     "items": {
       "feature1": {
-        "title": "",
-        "description": ""
+        "title": "اگلی نسل کی کارکردگی",
+        "description": "سرور کمپونینٹس اور بہتر اسٹریمنگ کی بدولت انتہائی تیز رفتار پیج لوڈنگ۔"
       },
       "feature2": {
-        "title": "",
-        "description": ""
+        "title": "ماڈیولر ڈیزائن سسٹم",
+        "description": "آسانی سے قابلِ ترتیب ٹوکنز، رنگوں کی اسکیمیں اور سسٹم ٹائپوگرافی۔"
       },
       "feature3": {
-        "title": "",
-        "description": ""
+        "title": "پہلے سے محفوظ",
+        "description": "سیکیورٹی کے بہترین طریقے، ٹائپ شدہ اسکیما کی جانچ اور محفوظ روٹس پہلے سے شامل ہیں۔"
       },
       "feature4": {
-        "title": "",
-        "description": ""
+        "title": "بین الاقوامی زبانوں کے لیے تیار",
+        "description": "ترجمہ فائلوں کے ساتھ کثیر لسانی فن تعمیر، جو آسانی سے دیگر زبانوں کو سپورٹ کرتا ہے۔"
       },
       "feature5": {
-        "title": "",
-        "description": ""
+        "title": "قابلِ رسائی انٹرفیس",
+        "description": "WCAG معیارات، ARIA اوصاف اور مکمل کی بورڈ کنٹرول کی سختی سے پابندی۔"
       },
       "feature6": {
-        "title": "",
-        "description": ""
+        "title": "ڈویلپر کے لیے آسان",
+        "description": "مکمل TypeScript سپورٹ، سخت ٹائپ چیکنگ اور بغیر کسی اضافی سیٹ اپ کے فوری شروعات۔"
       }
     }
   },
   "contact": {
-    "title": "",
-    "subtitle": "",
+    "title": "ہم سے رابطہ کریں",
+    "subtitle": "کوئی سوال ہے یا تعاون کرنا چاہتے ہیں؟ ہمیں پیغام بھیجیں، ہماری ٹیم جلد از جلد آپ سے رابطہ کرے گی۔",
     "form": {
-      "nameLabel": "",
-      "namePlaceholder": "",
-      "emailLabel": "",
-      "emailPlaceholder": "",
-      "subjectLabel": "",
-      "subjectPlaceholder": "",
-      "messageLabel": "",
-      "messagePlaceholder": "",
-      "submitButton": "",
-      "submitting": ""
+      "nameLabel": "پورا نام",
+      "namePlaceholder": "اپنا پورا نام درج کریں",
+      "emailLabel": "ای میل ایڈریس",
+      "emailPlaceholder": "you@example.com",
+      "subjectLabel": "موضوع",
+      "subjectPlaceholder": "ہم آپ کی کیا مدد کر سکتے ہیں؟",
+      "messageLabel": "پیغام",
+      "messagePlaceholder": "اپنا پیغام یہاں لکھیں...",
+      "submitButton": "پیغام بھیجیں",
+      "submitting": "بھیجا جا رہا ہے..."
     },
     "validation": {
-      "nameRequired": "",
-      "emailRequired": "",
-      "emailInvalid": "",
-      "subjectRequired": "",
-      "messageRequired": "",
-      "messageMinLength": ""
+      "nameRequired": "براہ کرم اپنا نام درج کریں۔",
+      "emailRequired": "براہ کرم اپنا ای میل ایڈریس درج کریں۔",
+      "emailInvalid": "براہ کرم درست ای میل ایڈریس درج کریں۔",
+      "subjectRequired": "براہ کرم موضوع درج کریں۔",
+      "messageRequired": "براہ کرم اپنا پیغام درج کریں۔",
+      "messageMinLength": "پیغام کم از کم 10 حروف پر مشتمل ہونا چاہیے۔"
     },
     "success": {
-      "title": "",
-      "message": "",
-      "reset": ""
+      "title": "پیغام کامیابی سے بھیج دیا گیا!",
+      "message": "رابطہ کرنے کا شکریہ۔ ہمیں آپ کی درخواست موصول ہو گئی ہے اور ہم جلد ہی جواب دیں گے۔",
+      "reset": "ایک اور پیغام بھیجیں"
     },
     "info": {
-      "title": "",
-      "emailLabel": "",
-      "phoneLabel": "",
-      "addressLabel": "",
-      "hoursLabel": ""
+      "title": "رابطے کی معلومات",
+      "emailLabel": "ای میل",
+      "phoneLabel": "فون",
+      "addressLabel": "دفتر کا پتہ",
+      "hoursLabel": "دفتری اوقات"
     }
   },
   "auth": {
     "login": {
-      "title": "",
-      "subtitle": "",
-      "emailLabel": "",
-      "emailPlaceholder": "",
-      "passwordLabel": "",
-      "passwordPlaceholder": "",
-      "showPassword": "",
-      "hidePassword": "",
-      "forgotPassword": "",
-      "submitButton": "",
-      "submitting": "",
-      "orDivider": "",
-      "googleButton": "",
-      "noAccount": "",
-      "signupLink": "",
-      "backHome": ""
+      "title": "اپنے اکاؤنٹ میں لاگ ان کریں",
+      "subtitle": "اپنے اکاؤنٹ تک رسائی کے لیے اپنی معلومات درج کریں",
+      "emailLabel": "ای میل ایڈریس",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "پاس ورڈ",
+      "passwordPlaceholder": "اپنا پاس ورڈ درج کریں",
+      "showPassword": "پاس ورڈ دکھائیں",
+      "hidePassword": "پاس ورڈ چھپائیں",
+      "forgotPassword": "پاس ورڈ بھول گئے؟",
+      "submitButton": "لاگ ان کریں",
+      "submitting": "لاگ ان ہو رہا ہے...",
+      "orDivider": "یا",
+      "googleButton": "گوگل کے ساتھ جاری رکھیں",
+      "noAccount": "کیا آپ کا اکاؤنٹ نہیں ہے؟",
+      "signupLink": "سائن اپ کریں",
+      "backHome": "ہوم پیج پر واپس جائیں"
     },
     "register": {
-      "title": "",
-      "subtitle": "",
-      "fullNameLabel": "",
-      "fullNamePlaceholder": "",
-      "emailLabel": "",
-      "emailPlaceholder": "",
-      "passwordLabel": "",
-      "passwordPlaceholder": "",
-      "confirmPasswordLabel": "",
-      "confirmPasswordPlaceholder": "",
-      "showPassword": "",
-      "hidePassword": "",
-      "submitButton": "",
-      "submitting": "",
-      "orDivider": "",
-      "googleButton": "",
-      "hasAccount": "",
-      "loginLink": "",
-      "backHome": "",
-      "checkEmailTitle": "",
-      "checkEmailMessage": ""
+      "title": "نیا اکاؤنٹ بنائیں",
+      "subtitle": "پلیٹ فارم پر شروعات کرنے کے لیے سائن اپ کریں",
+      "fullNameLabel": "پورا نام",
+      "fullNamePlaceholder": "اپنا پورا نام درج کریں",
+      "emailLabel": "ای میل ایڈریس",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "پاس ورڈ",
+      "passwordPlaceholder": "پاس ورڈ بنائیں (کم از کم 8 حروف)",
+      "confirmPasswordLabel": "پاس ورڈ کی تصدیق کریں",
+      "confirmPasswordPlaceholder": "اپنا پاس ورڈ دوبارہ درج کریں",
+      "showPassword": "پاس ورڈ دکھائیں",
+      "hidePassword": "پاس ورڈ چھپائیں",
+      "submitButton": "اکاؤنٹ بنائیں",
+      "submitting": "اکاؤنٹ بنایا جا رہا ہے...",
+      "orDivider": "یا",
+      "googleButton": "گوگل کے ساتھ جاری رکھیں",
+      "hasAccount": "پہلے سے اکاؤنٹ موجود ہے؟",
+      "loginLink": "لاگ ان کریں",
+      "backHome": "ہوم پیج پر واپس جائیں",
+      "checkEmailTitle": "اپنا ای میل چیک کریں",
+      "checkEmailMessage": "ہم نے آپ کے ای میل پر تصدیقی لنک بھیجا ہے۔ سائن اپ مکمل کرنے کے لیے لنک پر کلک کریں۔"
     },
     "forgotPassword": {
-      "title": "",
-      "subtitle": "",
-      "emailLabel": "",
-      "emailPlaceholder": "",
-      "submitButton": "",
-      "submitting": "",
-      "successTitle": "",
-      "successMessage": "",
-      "backToLogin": "",
-      "backHome": ""
+      "title": "اپنا پاس ورڈ دوبارہ ترتیب دیں",
+      "subtitle": "اپنا ای میل درج کریں اور ہم آپ کو پاس ورڈ ری سیٹ کرنے کا لنک بھیجیں گے",
+      "emailLabel": "ای میل ایڈریس",
+      "emailPlaceholder": "you@example.com",
+      "submitButton": "ری سیٹ لنک بھیجیں",
+      "submitting": "بھیجا جا رہا ہے...",
+      "successTitle": "ری سیٹ لنک بھیج دیا گیا",
+      "successMessage": "اگر اس ای میل کے ساتھ اکاؤنٹ موجود ہے تو پاس ورڈ ری سیٹ کا لنک بھیج دیا گیا ہے۔",
+      "backToLogin": "لاگ ان پر واپس جائیں",
+      "backHome": "ہوم پیج پر واپس جائیں"
     },
     "resetPassword": {
-      "title": "",
-      "subtitle": "",
-      "newPasswordLabel": "",
-      "newPasswordPlaceholder": "",
-      "confirmPasswordLabel": "",
-      "confirmPasswordPlaceholder": "",
-      "showPassword": "",
-      "hidePassword": "",
-      "submitButton": "",
-      "submitting": "",
-      "successTitle": "",
-      "successMessage": "",
-      "loginButton": ""
+      "title": "نیا پاس ورڈ سیٹ کریں",
+      "subtitle": "نیچے اپنا نیا پاس ورڈ درج کریں",
+      "newPasswordLabel": "نیا پاس ورڈ",
+      "newPasswordPlaceholder": "نیا پاس ورڈ درج کریں (کم از کم 8 حروف)",
+      "confirmPasswordLabel": "نئے پاس ورڈ کی تصدیق کریں",
+      "confirmPasswordPlaceholder": "نیا پاس ورڈ دوبارہ درج کریں",
+      "showPassword": "پاس ورڈ دکھائیں",
+      "hidePassword": "پاس ورڈ چھپائیں",
+      "submitButton": "پاس ورڈ اپ ڈیٹ کریں",
+      "submitting": "اپ ڈیٹ ہو رہا ہے...",
+      "successTitle": "پاس ورڈ کامیابی سے اپ ڈیٹ ہو گیا",
+      "successMessage": "آپ کا پاس ورڈ تبدیل کر دیا گیا ہے۔ اب آپ اپنے نئے پاس ورڈ کے ساتھ لاگ ان کر سکتے ہیں۔",
+      "loginButton": "لاگ ان پر جائیں"
     },
     "captcha": {
-      "label": "",
-      "errorMessage": ""
+      "label": "میں روبوٹ نہیں ہوں",
+      "errorMessage": "براہ کرم کیپچا مکمل کریں۔"
     },
     "dropdown": {
-      "avatarAria": "",
-      "signedInAs": "",
-      "logout": "",
-      "loggingOut": ""
+      "avatarAria": "صارف کا مینو کھولیں",
+      "signedInAs": "بطور لاگ ان ہیں",
+      "logout": "لاگ آؤٹ",
+      "loggingOut": "لاگ آؤٹ ہو رہا ہے..."
     },
     "errors": {
-      "nameRequired": "",
-      "emailRequired": "",
-      "emailInvalid": "",
-      "passwordRequired": "",
-      "passwordMinLength": "",
-      "confirmPasswordRequired": "",
-      "passwordsDoNotMatch": "",
-      "invalidCredentials": "",
-      "emailAlreadyRegistered": "",
-      "networkError": "",
-      "googleCancelled": "",
-      "genericError": "",
+      "nameRequired": "براہ کرم اپنا پورا نام درج کریں۔",
+      "emailRequired": "براہ کرم اپنا ای میل ایڈریس درج کریں۔",
+      "emailInvalid": "براہ کرم درست ای میل ایڈریس درج کریں۔",
+      "passwordRequired": "براہ کرم پاس ورڈ درج کریں۔",
+      "passwordMinLength": "پاس ورڈ کم از کم 8 حروف پر مشتمل ہونا چاہیے۔",
+      "confirmPasswordRequired": "براہ کرم اپنے پاس ورڈ کی تصدیق کریں۔",
+      "passwordsDoNotMatch": "پاس ورڈ ایک دوسرے سے مماثل نہیں ہیں۔",
+      "invalidCredentials": "غلط ای میل یا پاس ورڈ۔ براہ کرم اپنی معلومات چیک کریں۔",
+      "emailAlreadyRegistered": "اس ای میل ایڈریس کے ساتھ پہلے سے اکاؤنٹ موجود ہے۔",
+      "networkError": "نیٹ ورک کنکشن میں خرابی پیش آگئی۔ براہ کرم دوبارہ کوشش کریں۔",
+      "googleCancelled": "گوگل سائن ان منسوخ ہو گیا یا خرابی پیش آگئی۔ دوبارہ کوشش کریں۔",
+      "genericError": "کچھ غلط ہو گیا۔ براہ کرم بعد میں دوبارہ کوشش کریں۔",
       "captchaRequired": "براہ کرم کیپچا مکمل کریں۔",
       "captchaFailed": "کیپچا کی تصدیق ناکام ہو گئی۔ براہ کرم دوبارہ کوشش کریں۔"
     }
   },
   "notFound": {
-    "code": "",
-    "title": "",
-    "description": "",
-    "backHome": ""
+    "code": "404",
+    "title": "صفحہ نہیں ملا",
+    "description": "جو صفحہ آپ تلاش کر رہے ہیں وہ موجود نہیں ہے یا منتقل کر دیا گیا ہے۔",
+    "backHome": "ہوم پیج پر واپس جائیں"
   },
   "footer": {
-    "tagline": "",
-    "productTitle": "",
-    "companyTitle": "",
-    "contactTitle": "",
-    "copyright": ""
+    "tagline": "آپ کی اگلی ویب ایپلی کیشن کے لیے ایک شفاف اور جدید بنیاد۔",
+    "productTitle": "پروڈکٹ",
+    "companyTitle": "کمپنی",
+    "contactTitle": "رابطہ",
+    "copyright": "© {year} {name}۔ جملہ حقوق محفوظ ہیں۔"
   },
   "chat": {
-    "title": "",
-    "subtitle": "",
-    "welcomeMessage": "",
-    "inputPlaceholder": "",
-    "sendButton": "",
-    "voicePlaceholder": "",
-    "closeButton": "",
-    "openButton": "",
-    "typingIndicator": "",
-    "dummyReply": "",
+    "title": "اے آئی اسسٹنٹ",
+    "subtitle": "ورچوئل سپورٹ",
+    "welcomeMessage": "ہیلو! میں آپ کا اے آئی اسسٹنٹ ہوں۔ آج میں ہماری پروڈکٹ کو سمجھنے میں آپ کی کیا مدد کر سکتا ہوں؟",
+    "inputPlaceholder": "ایک پیغام لکھیں...",
+    "sendButton": "پیغام بھیجیں",
+    "voicePlaceholder": "آواز کا ان پٹ (جلد آرہا ہے)",
+    "closeButton": "اے آئی اسسٹنٹ بند کریں",
+    "openButton": "اے آئی اسسٹنٹ کھولیں",
+    "typingIndicator": "اے آئی جواب لکھ رہا ہے...",
+    "dummyReply": "آپ کے پیغام کا شکریہ! یہ ایک فرضی اے آئی جواب ہے۔ حقیقی ذہین گفتگو کے لیے اپنے بیک اینڈ API کو جوڑیں۔",
     "chips": {
-      "chip1": "",
-      "chip2": "",
-      "chip3": ""
+      "chip1": "اس میں کون سے فیچرز شامل ہیں؟",
+      "chip2": "میں کیسے شروعات کروں؟",
+      "chip3": "میں سپورٹ سے کہاں رابطہ کروں؟"
     }
+  },
+  "meta": {
+    "homeTitle": "ہوم",
+    "homeDescription": "آپ کے اگلے بڑے آئیڈیا کے لیے ایک جدید بنیاد۔",
+    "aboutTitle": "ہمارے بارے میں",
+    "featuresTitle": "خصوصیات",
+    "contactTitle": "رابطہ",
+    "loginTitle": "لاگ ان",
+    "registerTitle": "سائن اپ",
+    "forgotPasswordTitle": "پاس ورڈ ری سیٹ کریں",
+    "resetPasswordTitle": "نیا پاس ورڈ سیٹ کریں",
+    "notFoundTitle": "صفحہ نہیں ملا"
+  },
+  "dashboard": {
+    "title": "ڈیش بورڈ",
+    "welcome": "خوش آمدید، {name}"
   }
 }

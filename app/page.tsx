@@ -41,7 +41,7 @@ export default function HomePage() {
               className="w-full sm:w-auto h-10 px-6 inline-flex items-center justify-center text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors shadow-xs"
             >
               <span>{t("home.hero.getStarted")}</span>
-              <ArrowRight className="w-4 h-4 ml-1.5" />
+              <ArrowRight className="w-4 h-4 ms-1.5 rtl-flip" />
             </Link>
 
             <Link
@@ -266,7 +266,7 @@ export default function HomePage() {
                   {t("contact.info.title")}
                 </h3>
                 <p className="text-xs text-muted">
-                  {siteConfig.tagline}
+                  {t("site.tagline")}
                 </p>
               </div>
 
@@ -282,7 +282,8 @@ export default function HomePage() {
                     </h4>
                     <a
                       href={`mailto:${siteConfig.contact.email}`}
-                      className="text-sm text-foreground hover:text-primary transition-colors break-all"
+                      dir="ltr"
+                      className="text-sm text-foreground hover:text-primary transition-colors break-all inline-block ltr-isolate"
                     >
                       {siteConfig.contact.email}
                     </a>
@@ -300,7 +301,8 @@ export default function HomePage() {
                     </h4>
                     <a
                       href={`tel:${siteConfig.contact.phone.replace(/[^0-9+]/g, "")}`}
-                      className="text-sm text-foreground hover:text-primary transition-colors"
+                      dir="ltr"
+                      className="text-sm text-foreground hover:text-primary transition-colors inline-block ltr-isolate"
                     >
                       {siteConfig.contact.phone}
                     </a>

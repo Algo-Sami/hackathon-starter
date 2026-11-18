@@ -4,9 +4,10 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { Mail, CheckCircle, ArrowLeft } from "lucide-react";
 import { forgotPasswordAction } from "@/app/actions/auth";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
 
 export function ForgotPasswordForm() {
+  const { t } = useTranslation();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -70,7 +71,7 @@ export function ForgotPasswordForm() {
           {t("auth.forgotPassword.emailLabel")}
         </label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+          <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
           <input
             id="forgot-email"
             name="email"
@@ -80,7 +81,7 @@ export function ForgotPasswordForm() {
             placeholder={t("auth.forgotPassword.emailPlaceholder")}
             aria-describedby={error ? errorId : undefined}
             aria-invalid={!!error}
-            className="w-full pl-9 pr-3 h-10 text-sm border border-border rounded bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+            className="w-full ps-9 pe-3 h-10 text-sm border border-border rounded bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           />
         </div>
       </div>
@@ -113,7 +114,7 @@ export function ForgotPasswordForm() {
           href="/login"
           className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-3.5 h-3.5 rtl-flip" />
           {t("auth.forgotPassword.backToLogin")}
         </Link>
       </div>

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Square } from "lucide-react";
 import { siteConfig } from "@/config/site";
-import { t } from "@/lib/i18n";
+import { useTranslation } from "@/components/providers/LanguageProvider";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { UserDropdown, type UserDropdownProps } from "@/components/auth/UserDropdown";
 
 interface NavItem {
@@ -29,6 +30,7 @@ export function Header({ user }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
   const pathname = usePathname();
+  const { t, isRTL } = useTranslation();
 
   // Scroll spy to highlight the active section when on the home page
   useEffect(() => {
@@ -89,13 +91,13 @@ export function Header({ user }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full bg-background border-b border-border transition-colors">
       <div className="site-container h-16 flex items-center justify-between">
-        {/* Left: Dummy Logo */}
+        {/* Brand Logo & Nav */}
         <div className="flex items-center gap-6">
           <Link
             href="/#home"
             onClick={(e) => handleNavClick(e, "home")}
             className="flex items-center gap-2.5 group focus:outline-none"
-            aria-label={`${siteConfig.name} Home`}
+            aria-label={`${siteConfig.name} ${t("nav.home")}`}
           >
             <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold text-sm shadow-xs group-hover:bg-primary-hover transition-colors">
               <Square className="w-4 h-4 fill-white text-white" />
@@ -105,10 +107,10 @@ export function Header({ user }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Desktop Nav Links (Center / Right) */}
+          {/* Desktop Nav Links */}
           <nav
-            className="hidden md:flex items-center gap-1 ml-4"
-            aria-label="Main Navigation"
+            className="hidden md:flex items-center gap-1 ms-4"
+            aria-label={t("nav.home")}
           >
             {navLinks.map((link) => {
               const active = isLinkActive(link.sectionId);
@@ -133,20 +135,8 @@ export function Header({ user }: HeaderProps) {
 
         {/* Right: Language switcher & Auth */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Language Switcher placeholder */}
-          <div
-            className="flex items-center text-xs text-muted border border-border rounded px-2 py-1 gap-1 select-none"
-            title="Language switcher (placeholder)"
-            aria-label="Language selection"
-          >
-            <span className="font-semibold text-foreground">
-              {t("nav.langEn")}
-            </span>
-            <span className="text-border">|</span>
-            <span className="text-muted hover:text-foreground cursor-default">
-              {t("nav.langUr")}
-            </span>
-          </div>
+          {/* Functional Language Switcher */}
+          <LanguageSwitcher />
 
           {/* Logged-in: avatar dropdown | Logged-out: login + sign up */}
           {user ? (
@@ -166,7 +156,7 @@ export function Header({ user }: HeaderProps) {
 
               <Link
                 href="/register"
-                className="h-9 px-4 inline-flex items-center justify-center text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors"
+                className="h-9 px-4 inline-flex items-center justify-center text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors shadow-xs"
               >
                 {t("nav.signup")}
               </Link>
@@ -174,21 +164,12 @@ export function Header({ user }: HeaderProps) {
           )}
         </div>
 
-        {/* Mobile Hamburger Button */}
+        {/* Mobile Header Controls */}
         <div className="flex md:hidden items-center gap-2">
           {/* Mobile Language Switcher */}
-          <div
-            className="flex items-center text-xs text-muted border border-border rounded px-1.5 py-0.5 gap-1 select-none"
-            aria-label="Language selection"
-          >
-            <span className="font-semibold text-foreground">
-              {t("nav.langEn")}
-            </span>
-            <span className="text-border">|</span>
-            <span className="text-muted">{t("nav.langUr")}</span>
-          </div>
+          <LanguageSwitcher size="sm" />
 
-          {/* Mobile: show avatar or hamburger */}
+          {/* Mobile User Avatar if logged in */}
           {user && (
             <UserDropdown
               email={user.email}
@@ -217,7 +198,11 @@ export function Header({ user }: HeaderProps) {
 
       {/* Mobile Slide-Down Panel */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 pt-3 pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div
+          className={`md:hidden border-t border-border bg-background px-4 pt-3 pb-6 space-y-3 animate-in fade-in slide-in-from-top-2 duration-150 ${
+            isRTL ? "text-end" : "text-start"
+          }`}
+        >
           <nav className="flex flex-col space-y-1" aria-label="Mobile Navigation">
             {navLinks.map((link) => {
               const active = isLinkActive(link.sectionId);
