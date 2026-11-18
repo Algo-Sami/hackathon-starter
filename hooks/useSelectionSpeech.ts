@@ -210,21 +210,28 @@ export function useSelectionSpeech() {
         audio.onended = () => {
           audio.onended = null;
           audio.onerror = null;
+          setErrorKey(null);
           void playNextChunkRef.current(index + 1);
         };
 
         audio.onerror = () => {
           if (!isPlayingRef.current) return;
 
-          // If the audio already finished or is within 0.5s of the end (common Chromium Lavf WAV EOF glitch),
-          // treat as normal completion rather than playback failure
-          if (
+          // If audio has already played meaningfully, ended, or encountered standard Chromium/FFmpeg WAV EOF glitch,
+          // treat as normal completion so we never show a false playback failure after speech finishes.
+          const isFinishedOrPlayed =
             audio.ended ||
-            (audio.duration > 0 &&
-              audio.currentTime >= Math.max(0, audio.duration - 0.5))
-          ) {
+            audio.currentTime > 0.8 ||
+            (!Number.isFinite(audio.duration) && audio.currentTime > 0.3) ||
+            (Number.isFinite(audio.duration) &&
+              audio.duration > 0 &&
+              (audio.currentTime >= Math.max(0, audio.duration - 1.2) ||
+                audio.currentTime / audio.duration >= 0.7));
+
+          if (isFinishedOrPlayed) {
             audio.onended = null;
             audio.onerror = null;
+            setErrorKey(null);
             void playNextChunkRef.current(index + 1);
             return;
           }

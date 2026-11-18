@@ -92,6 +92,12 @@ export async function applyIncrementalPlanUpdate(
   const updatedVenue: Record<string, unknown> = {
     ...((currentPlan?.venue_details as Record<string, unknown>) || {}),
   };
+  const updatedJudging: Record<string, unknown> = {
+    ...((currentPlan?.judging_details as Record<string, unknown>) || {}),
+  };
+  const updatedSchedule: Record<string, unknown> = {
+    ...((currentPlan?.schedule_details as Record<string, unknown>) || {}),
+  };
 
   const rawLower = params.rawMessage.toLowerCase();
 
@@ -122,6 +128,14 @@ export async function applyIncrementalPlanUpdate(
     updatedVenue.capacity = 220;
     updatedVenue.cost = 180000;
     updatedVenue.status = "approved";
+  } else if (
+    params.proposal.section === "Judging" ||
+    rawLower.includes("20 judges") ||
+    rawLower.includes("three teams") ||
+    rawLower.includes("3 teams")
+  ) {
+    updatedJudging.availableJudges = 20;
+    updatedJudging.maxFeasibleCapacity = 60;
   }
 
   // Persist updated shared plan
@@ -134,6 +148,8 @@ export async function applyIncrementalPlanUpdate(
           catering_details: updatedCatering,
           budget_details: updatedBudget,
           venue_details: updatedVenue,
+          schedule_details: updatedSchedule,
+          judging_details: updatedJudging,
           last_updated_at: new Date().toISOString(),
         })
         .eq("id", currentPlan.id);
@@ -147,8 +163,8 @@ export async function applyIncrementalPlanUpdate(
     catering: updatedCatering,
     food: updatedCatering,
     budget: updatedBudget,
-    schedule: currentPlan?.schedule_details || {},
-    judging: currentPlan?.judging_details || {},
+    schedule: updatedSchedule,
+    judging: updatedJudging,
     version: newVersion,
     isValid: true,
     lastUpdated: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today",

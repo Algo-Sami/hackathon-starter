@@ -176,6 +176,96 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
       }
     }
     syncBackendData();
+
+    // Setup Supabase Realtime multi-user live synchronization
+    const supabase = createClient();
+    const channel = supabase
+      .channel("eventmind-centralized-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shared_event_plans" },
+        () => {
+          fetch("/api/eventmind/plan")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((planRes) => {
+              if (planRes?.plan) {
+                setState((prev) => ({
+                  ...prev,
+                  venue: planRes.plan.venue || prev.venue,
+                  food: planRes.plan.food || prev.food,
+                  budget: planRes.plan.budget || prev.budget,
+                  schedule: planRes.plan.schedule || prev.schedule,
+                  judging: planRes.plan.judging || prev.judging,
+                  version: planRes.plan.version || prev.version,
+                }));
+              }
+            })
+            .catch(() => {});
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "plan_change_history" },
+        () => {
+          fetch("/api/eventmind/history")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((histRes) => {
+              if (Array.isArray(histRes?.history)) {
+                setState((prev) => ({ ...prev, updateHistory: histRes.history }));
+              }
+            })
+            .catch(() => {});
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        () => {
+          fetch("/api/eventmind/messages")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((msgsRes) => {
+              if (Array.isArray(msgsRes?.messages) && msgsRes.messages.length > 0) {
+                interface RawDbMsg {
+                  id?: string;
+                  sender_name?: string;
+                  sender_role?: string;
+                  created_at?: string;
+                  raw_content?: string;
+                  classification?: EventMessage["classification"];
+                  decision_status?: EventMessage["decisionStatus"];
+                  decision_reason?: string;
+                  affected_sections?: AreaTag[];
+                }
+                setState((prev) => ({
+                  ...prev,
+                  messages: msgsRes.messages.map((m: RawDbMsg, idx: number) => ({
+                    id: m.id || `MSG-${idx}`,
+                    sequence: idx + 1,
+                    sender: m.sender_name || "Contributor",
+                    role: m.sender_role || "Event Organizer",
+                    timestamp:
+                      new Date(m.created_at || Date.now()).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }) + ", Today",
+                    rawText: m.raw_content || "",
+                    language: "en",
+                    classification: m.classification || "confirmed_fact",
+                    decisionStatus: m.decision_status || "accepted",
+                    decisionReason: m.decision_reason || "",
+                    affectedAreas: m.affected_sections || [],
+                  })),
+                }));
+              }
+            })
+            .catch(() => {});
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const [isProcessing, setIsProcessing] = useState(false);
