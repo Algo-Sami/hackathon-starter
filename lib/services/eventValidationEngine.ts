@@ -155,9 +155,86 @@ export function validateProposedPlanChange(
     "Finance Person": ["Budget", "General"],
     "Venue Manager": ["Venue", "General"],
     "Judging Coordinator": ["Judging", "Schedule", "General"],
-    "Dean": ["Budget", "Schedule", "General"],
+    "Dean": ["Budget", "Schedule", "Venue", "General"],
     "Event Organizer": ["Venue", "Catering", "Budget", "Schedule", "Judging", "General"],
   };
+
+  // 5a. Student / Attendee Headcount Update (e.g. "student change to 160", "students 160", "increase students to 160")
+  const isStudentProposal =
+    (textLower.includes("student") ||
+      textLower.includes("headcount") ||
+      textLower.includes("attendance") ||
+      textLower.includes("participant") ||
+      textLower.includes("attendee")) &&
+    (/\b\d{2,3}\b/.test(textLower) ||
+      proposal.proposed_changes.some(
+        (c) =>
+          c.field.includes("student") ||
+          c.field.includes("headcount") ||
+          c.field.includes("attendance")
+      ));
+
+  if (isStudentProposal) {
+    const studentMatch =
+      rawMessage.match(
+        /\b(?:student[s]?|headcount|attendance|participant[s]?|attendee[s]?)\s*(?:change[d]?\s*(?:to\s*)?|increase[d]?\s*(?:to\s*)?|to\s*|is\s*|=\s*|:\s*)?(\d{2,3})\b/i
+      ) ||
+      rawMessage.match(
+        /\b(\d{2,3})\s*(?:student[s]?|participant[s]?|attendee[s]?)\b/i
+      ) ||
+      rawMessage.match(/\b(?:to\s*)?(\d{2,3})\b/i);
+
+    const proposedCount = studentMatch ? parseInt(studentMatch[1], 10) : 160;
+
+    let newStudents = proposedCount;
+    let newHeadcount = proposedCount;
+    if (proposedCount < 170) {
+      newStudents = proposedCount;
+      newHeadcount = proposedCount + 10 + 17; // 10 staff + 17 judges
+    } else {
+      newHeadcount = proposedCount;
+      newStudents = Math.max(150, proposedCount - 27);
+    }
+
+    if (newStudents < 150) {
+      return {
+        isValid: false,
+        action: "Rejected",
+        reason: `REJECTED: Student headcount cannot be reduced below verified baseline of 150 students (50 teams × 3 members). Proposed ${newStudents} students would cause team shortfall.`,
+        affectedSections: ["Venue", "Catering"],
+        previousValue: "150 Students (177 Total Headcount)",
+        newValue: `Proposed: ${newStudents} Students (Rejected)`,
+        targetNotifRoles: ["Event Organizer", "Dean"],
+      };
+    }
+
+    const maxVenueCapacity = 220;
+    if (newHeadcount > maxVenueCapacity) {
+      return {
+        isValid: false,
+        action: "Rejected",
+        reason: `REJECTED: Proposed ${newStudents} students (${newHeadcount} total attendees) exceeds Pak-China Hall B maximum capacity of ${maxVenueCapacity} seats by ${newHeadcount - maxVenueCapacity} seats.`,
+        affectedSections: ["Venue"],
+        previousValue: `Venue Capacity: ${maxVenueCapacity} seats`,
+        newValue: `Proposed Headcount: ${newHeadcount} (Over capacity)`,
+        targetNotifRoles: ["Venue Manager", "Event Organizer", "Dean"],
+      };
+    }
+
+    const cushion = maxVenueCapacity - newHeadcount;
+    const foodUnitPrice = 1000;
+    const newTotalFood = newHeadcount * foodUnitPrice + 5000;
+
+    return {
+      isValid: true,
+      action: "Accepted",
+      reason: `ACCEPTED: Verified student count updated to ${newStudents}. Total event headcount adjusted to ${newHeadcount} (${newStudents} students, 10 staff, 17 judges). Venue Pak-China Hall B (220 seats) comfortably accommodates all attendees with ${cushion} buffer seats. Catering meals and budget synchronized.`,
+      affectedSections: ["Venue", "Catering", "Budget"],
+      previousValue: "Headcount: 177 (150 students, 10 staff, 17 judges)",
+      newValue: `Headcount: ${newHeadcount} (${newStudents} students, 10 staff, 17 judges)`,
+      targetNotifRoles: ["Event Organizer", "Venue Manager", "Catering Person", "Finance Person"],
+    };
+  }
 
   const allowedSections = roleSectionPermissions[userRole] || ["General"];
   if (proposal.section !== "General" && !allowedSections.includes(proposal.section)) {

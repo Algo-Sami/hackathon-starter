@@ -499,6 +499,57 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
         ).toLocaleString()}. Verified within Dean's ceiling of Rs 650,000.`;
         targetNotifRoles = ["Finance Person", "Event Organizer", "Dean"];
       } else if (
+        textLower.includes("student") ||
+        textLower.includes("headcount") ||
+        textLower.includes("attendance") ||
+        textLower.includes("participant") ||
+        textLower.includes("attendee")
+      ) {
+        const studentMatch =
+          rawText.match(
+            /\b(?:student[s]?|headcount|attendance|participant[s]?|attendee[s]?)\s*(?:change[d]?\s*(?:to\s*)?|increase[d]?\s*(?:to\s*)?|to\s*|is\s*|=\s*|:\s*)?(\d{2,3})\b/i
+          ) ||
+          rawText.match(
+            /\b(\d{2,3})\s*(?:student[s]?|participant[s]?|attendee[s]?)\b/i
+          ) ||
+          rawText.match(/\b(?:to\s*)?(\d{2,3})\b/i);
+
+        const proposedCount = studentMatch ? parseInt(studentMatch[1], 10) : 160;
+        const newStudents = proposedCount < 170 ? proposedCount : Math.max(150, proposedCount - 27);
+        const newHeadcount = proposedCount < 170 ? proposedCount + 27 : proposedCount;
+
+        if (newStudents < 150) {
+          classification = "invalid_proposal";
+          decisionStatus = "rejected";
+          isInvalidProposal = true;
+          sectionTag = "Venue";
+          affectedAreas = ["venue", "food"];
+          previousVal = "150 Students (177 Total Headcount)";
+          newVal = `Proposed: ${newStudents} Students (Rejected)`;
+          decisionReason = `REJECTED: Student headcount cannot be reduced below verified baseline of 150 students (50 teams × 3 members). Proposed ${newStudents} students would cause team shortfall.`;
+          targetNotifRoles = ["Event Organizer", "Dean"];
+        } else if (newHeadcount > 220) {
+          classification = "invalid_proposal";
+          decisionStatus = "rejected";
+          isInvalidProposal = true;
+          sectionTag = "Venue";
+          affectedAreas = ["venue"];
+          previousVal = "Venue Capacity: 220 seats";
+          newVal = `Proposed Headcount: ${newHeadcount} (Over capacity)`;
+          decisionReason = `REJECTED: Proposed ${newStudents} students (${newHeadcount} total attendees) exceeds Pak-China Hall B maximum capacity of 220 seats by ${newHeadcount - 220} seats.`;
+          targetNotifRoles = ["Venue Manager", "Event Organizer", "Dean"];
+        } else {
+          classification = "update";
+          decisionStatus = "accepted";
+          sectionTag = "Venue";
+          affectedAreas = ["venue", "food", "budget"];
+          const cushion = 220 - newHeadcount;
+          previousVal = "Headcount: 177 (150 students, 10 staff, 17 judges)";
+          newVal = `Headcount: ${newHeadcount} (${newStudents} students, 10 staff, 17 judges)`;
+          decisionReason = `ACCEPTED: Verified student count updated to ${newStudents}. Total event headcount adjusted to ${newHeadcount} (${newStudents} students, 10 staff, 17 judges). Venue Pak-China Hall B (220 seats) comfortably accommodates all attendees with ${cushion} buffer seats. Catering meals and budget synchronized.`;
+          targetNotifRoles = ["Event Organizer", "Venue Manager", "Catering Person", "Finance Person"];
+        }
+      } else if (
         textLower.includes("room d") ||
         (textLower.includes("room-d") && (textLower.includes("small") || textLower.includes("reject") || textLower.includes("80")))
       ) {
@@ -681,6 +732,50 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
           status: "approved",
         };
         newVersion += 1;
+      } else if (
+        textLower.includes("student") ||
+        textLower.includes("headcount") ||
+        textLower.includes("attendance") ||
+        textLower.includes("participant") ||
+        textLower.includes("attendee")
+      ) {
+        const studentMatch =
+          rawText.match(
+            /\b(?:student[s]?|headcount|attendance|participant[s]?|attendee[s]?)\s*(?:change[d]?\s*(?:to\s*)?|increase[d]?\s*(?:to\s*)?|to\s*|is\s*|=\s*|:\s*)?(\d{2,3})\b/i
+          ) ||
+          rawText.match(
+            /\b(\d{2,3})\s*(?:student[s]?|participant[s]?|attendee[s]?)\b/i
+          ) ||
+          rawText.match(/\b(?:to\s*)?(\d{2,3})\b/i);
+
+        const num = studentMatch ? parseInt(studentMatch[1] || "160", 10) : 160;
+        const newStudents = num < 170 ? num : Math.max(150, num - 27);
+        const newHeadcount = num < 170 ? num + 27 : num;
+
+        updatedVenue = {
+          ...updatedVenue,
+          expectedAttendance: newHeadcount,
+        };
+        const unitPrice = updatedFood.unitPrice || 1000;
+        const newTotalFood = newHeadcount * unitPrice + (updatedFood.deliveryCharges || 5000);
+        const deltaFood = newTotalFood - updatedFood.totalCost;
+        updatedFood = {
+          ...updatedFood,
+          headcount: newHeadcount,
+          studentCount: newStudents,
+          totalCost: newTotalFood,
+        };
+        const updatedItems = updatedBudget.items.map((item) =>
+          item.category === "food" ? { ...item, amount: newTotalFood } : item
+        );
+        const newTotalCommitted = updatedBudget.totalCommitted + (deltaFood > 0 ? deltaFood : 0);
+        updatedBudget = {
+          ...updatedBudget,
+          items: updatedItems,
+          totalCommitted: newTotalCommitted,
+          remainingBalance: updatedBudget.approvedTotal - newTotalCommitted,
+        };
+        newVersion += 1;
       }
     }
 
@@ -763,44 +858,111 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     return { success: !isInvalidProposal, messageId: msgId };
   };
 
-  // Upload message pack (.txt)
+  // Upload message pack or text document (.txt, .json, .csv)
   const uploadMessagePack = async (fileContent: string, fileName: string): Promise<boolean> => {
     setIsProcessing(true);
     setLastActionResult(null);
 
-    // Call real backend upload API
+    const timestamp =
+      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today";
+    const authorName = `${currentUserRole} Lead`;
+
     try {
       const formData = new FormData();
       const blob = new Blob([fileContent], { type: "text/plain" });
       formData.append("file", blob, fileName);
       formData.append("userRole", currentUserRole);
-      formData.append("senderName", `${currentUserRole} Lead`);
+      formData.append("senderName", authorName);
 
-      await fetch("/api/eventmind/upload", {
+      const res = await fetch("/api/eventmind/upload", {
         method: "POST",
         body: formData,
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        const result = data?.result;
+
+        if (result) {
+          const nextSeq = state.messages.length + 1;
+          const newMsg: EventMessage = {
+            id: result.messageId || `MSG-UPL-${nextSeq}`,
+            sequence: nextSeq,
+            sender: authorName,
+            role: currentUserRole,
+            timestamp,
+            rawText: `[File Uploaded: ${fileName}]\n${fileContent.slice(0, 300)}${fileContent.length > 300 ? "..." : ""}`,
+            language: "en",
+            classification: (result.classification as EventMessage["classification"]) || "confirmed_fact",
+            decisionStatus: (result.decisionStatus as EventMessage["decisionStatus"]) || "accepted",
+            decisionReason: result.decisionReason || `File "${fileName}" analyzed and integrated into plan.`,
+            affectedAreas: (result.affectedAreas as AreaTag[]) || ["reading"],
+            isLatest: true,
+          };
+
+          const newUpdate: PlanUpdateEvent = {
+            id: `UPD-UPL-${state.updateHistory.length + 1}`,
+            timestamp,
+            submittedBy: authorName,
+            role: currentUserRole,
+            section: (result.affectedAreas?.[0] as PlanUpdateEvent["section"]) || "General",
+            rawMessage: `[File Upload: ${fileName}] ${fileContent.slice(0, 100)}`,
+            previousValue: "Previous event plan baseline",
+            newValue: `Processed: ${fileName}`,
+            aiAction: result.decisionReason || `Processed file ${fileName}`,
+            status: result.decisionStatus === "rejected" ? "Rejected" : "Accepted",
+          };
+
+          let updatedVenue = { ...state.venue };
+          let updatedFood = { ...state.food };
+          let updatedBudget = { ...state.budget };
+          let updatedSchedule = { ...state.schedule };
+          let updatedJudging = { ...state.judging };
+          let newVersion = state.version + 1;
+
+          if (result.updatedPlan) {
+            const plan = result.updatedPlan;
+            if (plan.venue) updatedVenue = { ...updatedVenue, ...(plan.venue as Record<string, unknown>) };
+            if (plan.food || plan.catering) updatedFood = { ...updatedFood, ...((plan.food || plan.catering) as Record<string, unknown>) };
+            if (plan.budget) updatedBudget = { ...updatedBudget, ...(plan.budget as Record<string, unknown>) };
+            if (plan.schedule) updatedSchedule = { ...updatedSchedule, ...(plan.schedule as Record<string, unknown>) };
+            if (plan.judging) updatedJudging = { ...updatedJudging, ...(plan.judging as Record<string, unknown>) };
+            if (typeof plan.version === "number") newVersion = plan.version;
+          }
+
+          const newState: EventPlanState = {
+            ...state,
+            version: newVersion,
+            lastUpdated: timestamp,
+            messages: [...state.messages.map((m) => ({ ...m, isLatest: false })), newMsg],
+            updateHistory: [newUpdate, ...state.updateHistory],
+            venue: updatedVenue,
+            food: updatedFood,
+            budget: updatedBudget,
+            schedule: updatedSchedule,
+            judging: updatedJudging,
+          };
+
+          saveState(newState);
+          setIsProcessing(false);
+          setLastActionResult({
+            type: "success",
+            message: `File "${fileName}" parsed & integrated into shared event plan (v${newVersion}).`,
+          });
+          return true;
+        }
+      }
     } catch {
-      // Non-blocking upload fallback
+      // Backend offline fallback: process file text directly through submitNewMessage
     }
 
-    const lines = fileContent
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-
-    const newState: EventPlanState = {
-      ...initialEventPlanState,
-      version: state.version + 1,
-      lastUpdated: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ", Today",
-    };
-
-    saveState(newState);
+    // Direct fallback if API not reachable
+    await submitNewMessage(
+      `[File: ${fileName}] ${fileContent.slice(0, 600)}`,
+      authorName,
+      currentUserRole
+    );
     setIsProcessing(false);
-    setLastActionResult({
-      type: "success",
-      message: `Batch file "${fileName}" parsed (${lines.length} lines). Shared event plan refreshed.`,
-    });
     return true;
   };
 

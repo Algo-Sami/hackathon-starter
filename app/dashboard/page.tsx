@@ -676,15 +676,21 @@ export default function AgentDashboardPage() {
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-semibold text-neutral-400 block uppercase">Total Headcount</span>
-                    <span className="text-xl font-extrabold text-emerald-700">177 Attendees</span>
+                    <span className="text-xl font-extrabold text-emerald-700">
+                      {state.food.headcount || state.venue.expectedAttendance || 177} Attendees
+                    </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                     <span className="text-neutral-500 block text-[11px]">Students</span>
-                    <strong className="text-sm font-bold text-neutral-900">150 Participants</strong>
-                    <span className="text-[10px] text-neutral-400 block">50 Teams (3/team)</span>
+                    <strong className="text-sm font-bold text-neutral-900">
+                      {state.food.studentCount || (state.food.headcount ? state.food.headcount - 27 : 150)} Participants
+                    </strong>
+                    <span className="text-[10px] text-neutral-400 block">
+                      {Math.ceil(((state.food.studentCount || (state.food.headcount ? state.food.headcount - 27 : 150)) / 3))} Teams (3/team)
+                    </span>
                   </div>
                   <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                     <span className="text-neutral-500 block text-[11px]">Event Staff</span>
@@ -693,7 +699,9 @@ export default function AgentDashboardPage() {
                   </div>
                   <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                     <span className="text-neutral-500 block text-[11px]">Judges & Mentors</span>
-                    <strong className="text-sm font-bold text-neutral-900">17 Evaluators</strong>
+                    <strong className="text-sm font-bold text-neutral-900">
+                      {state.judging?.availableJudges || 17} Evaluators
+                    </strong>
                     <span className="text-[10px] text-neutral-400 block">Industry experts</span>
                   </div>
                   <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
@@ -730,11 +738,15 @@ export default function AgentDashboardPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Required Headcount:</span>
-                      <strong className="text-neutral-900">177 people</strong>
+                      <strong className="text-neutral-900">
+                        {state.food.headcount || state.venue.expectedAttendance || 177} people
+                      </strong>
                     </div>
                     <div className="flex justify-between text-emerald-800 font-semibold">
                       <span>Available Cushion:</span>
-                      <span>+{state.venue.capacity - state.venue.expectedAttendance} seats</span>
+                      <span>
+                        +{state.venue.capacity - (state.food.headcount || state.venue.expectedAttendance || 177)} seats
+                      </span>
                     </div>
                   </div>
                   <p className="text-[11px] text-neutral-500 italic">

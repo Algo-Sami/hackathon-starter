@@ -105,7 +105,41 @@ export async function applyIncrementalPlanUpdate(
   const priceMatch = params.rawMessage.match(/\b(?:rs\.?|pkr)?\s*(\d{3,4})\b/i);
   const extractedPrice = priceMatch ? parseInt(priceMatch[1], 10) : rawLower.includes("1200") ? 1200 : null;
 
-  if (params.proposal.section === "Catering" && extractedPrice) {
+  if (
+    rawLower.includes("student") ||
+    rawLower.includes("headcount") ||
+    rawLower.includes("attendance") ||
+    rawLower.includes("participant")
+  ) {
+    const studentMatch =
+      params.rawMessage.match(
+        /\b(?:student[s]?|headcount|attendance|participant[s]?|attendee[s]?)\s*(?:change[d]?\s*(?:to\s*)?|increase[d]?\s*(?:to\s*)?|to\s*|is\s*|=\s*|:\s*)?(\d{2,3})\b/i
+      ) ||
+      params.rawMessage.match(
+        /\b(\d{2,3})\s*(?:student[s]?|participant[s]?|attendee[s]?)\b/i
+      ) ||
+      params.rawMessage.match(/\b(?:to\s*)?(\d{2,3})\b/i);
+
+    const num = studentMatch ? parseInt(studentMatch[1] || "160", 10) : 160;
+    const newStudents = num < 170 ? num : Math.max(150, num - 27);
+    const newHeadcount = num < 170 ? num + 27 : num;
+
+    updatedVenue.expectedAttendance = newHeadcount;
+    updatedVenue.headcount = newHeadcount;
+    updatedVenue.students = newStudents;
+
+    updatedCatering.headcount = newHeadcount;
+    updatedCatering.students = newStudents;
+    const unitPrice = (updatedCatering.unitPrice as number) || 1000;
+    const newFoodCost = newHeadcount * unitPrice + 5000;
+    const deltaFood = newFoodCost - ((updatedCatering.totalCost as number) || 182000);
+    updatedCatering.totalCost = newFoodCost;
+
+    const currentCommitted = (updatedBudget.totalCommitted as number) || 400050;
+    const newCommitted = currentCommitted + (deltaFood > 0 ? deltaFood : 0);
+    updatedBudget.totalCommitted = newCommitted;
+    updatedBudget.remainingBalance = 650000 - newCommitted;
+  } else if (params.proposal.section === "Catering" && extractedPrice) {
     const committed = 400050 + (extractedPrice - 650) * 177;
     updatedCatering.unitPrice = extractedPrice;
     updatedCatering.totalCost = extractedPrice * 177 + 5000;
@@ -145,6 +179,7 @@ export async function applyIncrementalPlanUpdate(
         .from("shared_event_plans")
         .update({
           version: newVersion,
+          headcount: (updatedCatering.headcount as number) || 177,
           catering_details: updatedCatering,
           budget_details: updatedBudget,
           venue_details: updatedVenue,
