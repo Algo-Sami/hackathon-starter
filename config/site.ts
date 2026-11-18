@@ -3,43 +3,38 @@ export interface SiteConfig {
   tagline: string;
   description: string;
   url: string;
-  contact: {
-    email: string;
-    phone: string;
-    address: string;
-    hours: string;
-  };
-  social: {
-    github: string;
-    twitter: string;
-    linkedin: string;
+  eventDetails: {
+    name: string;
+    city: string;
+    attendees: string;
+    budget: string;
+    duration: string;
   };
   navItems: Array<{
     key: string;
     href: string;
+    label: string;
   }>;
 }
 
 export const siteConfig: SiteConfig = {
-  name: "YourApp",
-  tagline: "A clean, modern foundation for your next product.",
-  description: "A reusable, production-ready starter built with Next.js App Router, TypeScript, and Tailwind CSS.",
-  url: "https://yourapp.example.com",
-  contact: {
-    email: "hello@yourapp.example.com",
-    phone: "+1 (555) 234-5678",
-    address: "100 Innovation Way, Suite 400, San Francisco, CA 94105",
-    hours: "Monday – Friday, 9:00 AM – 6:00 PM EST",
-  },
-  social: {
-    github: "https://github.com",
-    twitter: "https://twitter.com",
-    linkedin: "https://linkedin.com",
+  name: "EventMind AI",
+  tagline: "Intelligent Event Planning & Decision System",
+  description:
+    "Converts unstructured event messages in English & Roman Urdu into a valid, explainable, and incrementally updateable five-area event plan.",
+  url: "https://hackathon-starter-kappa.vercel.app",
+  eventDetails: {
+    name: "Physical Hackathon Islamabad",
+    city: "Islamabad, Pakistan",
+    attendees: "150 Students (50 Teams) + 10 Staff + 17 Judges",
+    budget: "Rs 650,000",
+    duration: "4.0 Hours",
   },
   navItems: [
-    { key: "nav.home", href: "/#home" },
-    { key: "nav.features", href: "/#features" },
-    { key: "nav.about", href: "/#about" },
-    { key: "nav.contact", href: "/#contact" },
+    { key: "nav.dashboard", href: "/", label: "Dashboard" },
+    { key: "nav.plan", href: "/plan", label: "Event Plan" },
+    { key: "nav.messages", href: "/messages", label: "Messages" },
+    { key: "nav.trace", href: "/trace", label: "AI Trace" },
+    { key: "nav.about", href: "/about", label: "About / Brief" },
   ],
 };

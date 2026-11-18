@@ -1,12 +1,17 @@
 {
   "site": {
-    "name": "YourApp",
-    "tagline": "A clean, modern foundation for your next product.",
-    "description": "A reusable, production-ready starter built with Next.js App Router, TypeScript, and Tailwind CSS."
+    "name": "EventMind AI",
+    "tagline": "Intelligent Event Planning & Decision System",
+    "description": "Converts unstructured event messages in English & Roman Urdu into a valid, explainable, and incrementally updateable five-area event plan."
   },
   "nav": {
     "home": "Home",
-    "about": "About",
+    "dashboard": "Dashboard",
+    "plan": "Event Plan",
+    "messages": "Messages",
+    "trace": "AI Trace",
+    "export": "Export",
+    "about": "About / Brief",
     "features": "Features",
     "contact": "Contact",
     "login": "Log in",
@@ -280,20 +285,20 @@
     "copyright": "© {year} {name}. All rights reserved."
   },
   "chat": {
-    "title": "AI Assistant",
-    "subtitle": "Virtual Support",
-    "welcomeMessage": "Hi there! I am your AI assistant. How can I help you explore our product today?",
-    "inputPlaceholder": "Type a message...",
+    "title": "EventMind AI Assistant",
+    "subtitle": "Planning & Decision Support",
+    "welcomeMessage": "Hi! I am the EventMind AI Assistant. I can help answer questions regarding the five event planning areas (Venue, Schedule, Food, Judging, Budget), explain rejected proposals, or review deterministic validations.",
+    "inputPlaceholder": "Ask a question about the event plan...",
     "sendButton": "Send message",
-    "voicePlaceholder": "Voice input (coming soon)",
+    "voicePlaceholder": "Voice input",
     "closeButton": "Close AI assistant",
     "openButton": "Open AI assistant",
-    "typingIndicator": "AI is typing...",
-    "dummyReply": "Thank you for your message! This is a placeholder AI response. Connect your backend API to enable real-time intelligent conversations.",
+    "typingIndicator": "AI is reasoning...",
+    "dummyReply": "I am operating in verified prototype mode. The current verified plan covers Venue (Hall B, capacity 220), Schedule (4.0 hrs with 20 min Asr break), Food (177 Biryani meals), Judging (17 judges, ~2.94 teams/judge), and Budget (Rs 400,050 committed within the Rs 650,000 ceiling).",
     "chips": {
-      "chip1": "What features are included?",
-      "chip2": "How do I get started?",
-      "chip3": "Where can I contact support?"
+      "chip1": "Why was the 100 food boxes proposal rejected?",
+      "chip2": "What is our current committed budget?",
+      "chip3": "How are 50 teams allocated across 17 judges?"
     }
   },
   "meta": {

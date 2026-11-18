@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Square } from "lucide-react";
+import { Menu, X, Sparkles, LayoutDashboard, CalendarDays, MessageSquareText, Cpu, Info } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { useTranslation } from "@/components/providers/LanguageProvider";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
@@ -11,15 +11,17 @@ import { UserDropdown, type UserDropdownProps } from "@/components/auth/UserDrop
 
 interface NavItem {
   href: string;
-  sectionId: string;
   labelKey: string;
+  defaultLabel: string;
+  icon: typeof LayoutDashboard;
 }
 
 const navLinks: NavItem[] = [
-  { href: "/#home", sectionId: "home", labelKey: "nav.home" },
-  { href: "/#features", sectionId: "features", labelKey: "nav.features" },
-  { href: "/#about", sectionId: "about", labelKey: "nav.about" },
-  { href: "/#contact", sectionId: "contact", labelKey: "nav.contact" },
+  { href: "/", labelKey: "nav.dashboard", defaultLabel: "Dashboard", icon: LayoutDashboard },
+  { href: "/plan", labelKey: "nav.plan", defaultLabel: "Event Plan", icon: CalendarDays },
+  { href: "/messages", labelKey: "nav.messages", defaultLabel: "Messages", icon: MessageSquareText },
+  { href: "/trace", labelKey: "nav.trace", defaultLabel: "AI Trace", icon: Cpu },
+  { href: "/about", labelKey: "nav.about", defaultLabel: "About", icon: Info },
 ];
 
 interface HeaderProps {
@@ -28,105 +30,60 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("home");
   const pathname = usePathname();
   const { t, isRTL } = useTranslation();
 
-  // Scroll spy to highlight the active section when on the home page
-  useEffect(() => {
-    if (pathname !== "/") {
-      return;
+  const isLinkActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
     }
-
-    const observerCallback: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    };
-
-    const observerOptions: IntersectionObserverInit = {
-      root: null,
-      rootMargin: "-20% 0px -60% 0px",
-      threshold: 0,
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    navLinks.forEach((link) => {
-      const element = document.getElementById(link.sectionId);
-      if (element) {
-        observer.observe(element);
-      }
-    });
-
-    return () => observer.disconnect();
-  }, [pathname]);
-
-  const handleNavClick = (
-    e: React.MouseEvent<HTMLAnchorElement>,
-    sectionId: string
-  ) => {
-    setMobileMenuOpen(false);
-
-    if (pathname === "/") {
-      e.preventDefault();
-      const targetElement = document.getElementById(sectionId);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: "smooth" });
-        window.history.pushState(null, "", `#${sectionId}`);
-        setActiveSection(sectionId);
-      }
-    }
-  };
-
-  const isLinkActive = (sectionId: string) => {
-    if (pathname === "/") {
-      return activeSection === sectionId;
-    }
-    return false;
+    return pathname.startsWith(href);
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background border-b border-border transition-colors">
+    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur-xs border-b border-border transition-colors">
       <div className="site-container h-16 flex items-center justify-between">
         {/* Brand Logo & Nav */}
         <div className="flex items-center gap-6">
           <Link
-            href="/#home"
-            onClick={(e) => handleNavClick(e, "home")}
+            href="/"
             className="flex items-center gap-2.5 group focus:outline-none"
-            aria-label={`${siteConfig.name} ${t("nav.home")}`}
+            aria-label={`${siteConfig.name} ${t("nav.dashboard", "Dashboard")}`}
           >
             <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold text-sm shadow-xs group-hover:bg-primary-hover transition-colors">
-              <Square className="w-4 h-4 fill-white text-white" />
+              <Sparkles className="w-4 h-4 fill-white text-white" />
             </div>
-            <span className="font-semibold text-lg tracking-tight text-foreground">
-              {siteConfig.name}
-            </span>
+            <div className="flex flex-col">
+              <span className="font-semibold text-base sm:text-lg tracking-tight text-foreground leading-none">
+                {siteConfig.name}
+              </span>
+              <span className="text-[10px] text-muted font-medium tracking-wide uppercase mt-0.5">
+                Islamabad 2026
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Nav Links */}
           <nav
-            className="hidden md:flex items-center gap-1 ms-4"
-            aria-label={t("nav.home")}
+            className="hidden md:flex items-center gap-1 ms-3"
+            aria-label={t("nav.dashboard", "Dashboard")}
           >
             {navLinks.map((link) => {
-              const active = isLinkActive(link.sectionId);
+              const active = isLinkActive(link.href);
+              const Icon = link.icon;
               return (
                 <Link
-                  key={link.sectionId}
+                  key={link.href}
                   href={link.href}
-                  onClick={(e) => handleNavClick(e, link.sectionId)}
                   aria-current={active ? "page" : undefined}
-                  className={`px-3 py-1.5 text-sm transition-colors rounded ${
+                  className={`px-3 py-1.5 text-sm transition-colors rounded flex items-center gap-1.5 ${
                     active
-                      ? "text-foreground font-semibold bg-surface border border-border/60"
-                      : "text-muted hover:text-foreground hover:bg-surface/50 font-normal"
+                      ? "text-primary font-semibold bg-primary-light border border-primary-accent/30"
+                      : "text-muted hover:text-foreground hover:bg-surface/80 font-normal"
                   }`}
                 >
-                  {t(link.labelKey)}
+                  <Icon className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-muted"}`} />
+                  <span>{t(link.labelKey, link.defaultLabel)}</span>
                 </Link>
               );
             })}
@@ -151,14 +108,14 @@ export function Header({ user }: HeaderProps) {
                 href="/login"
                 className="text-sm font-medium text-foreground hover:text-primary px-3 py-2 transition-colors rounded"
               >
-                {t("nav.login")}
+                {t("nav.login", "Log in")}
               </Link>
 
               <Link
                 href="/register"
                 className="h-9 px-4 inline-flex items-center justify-center text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors shadow-xs"
               >
-                {t("nav.signup")}
+                {t("nav.signup", "Sign up")}
               </Link>
             </>
           )}
@@ -183,7 +140,7 @@ export function Header({ user }: HeaderProps) {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-foreground hover:bg-surface rounded border border-border transition-colors"
             aria-label={
-              mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")
+              mobileMenuOpen ? t("nav.closeMenu", "Close main menu") : t("nav.openMenu", "Open main menu")
             }
             aria-expanded={mobileMenuOpen}
           >
@@ -205,20 +162,22 @@ export function Header({ user }: HeaderProps) {
         >
           <nav className="flex flex-col space-y-1" aria-label="Mobile Navigation">
             {navLinks.map((link) => {
-              const active = isLinkActive(link.sectionId);
+              const active = isLinkActive(link.href);
+              const Icon = link.icon;
               return (
                 <Link
-                  key={link.sectionId}
+                  key={link.href}
                   href={link.href}
-                  onClick={(e) => handleNavClick(e, link.sectionId)}
+                  onClick={() => setMobileMenuOpen(false)}
                   aria-current={active ? "page" : undefined}
-                  className={`px-3 py-2 text-base rounded transition-colors ${
+                  className={`px-3 py-2 text-base rounded transition-colors flex items-center gap-2.5 ${
                     active
-                      ? "text-foreground font-semibold bg-surface border border-border"
+                      ? "text-primary font-semibold bg-primary-light border border-primary-accent/30"
                       : "text-muted hover:text-foreground hover:bg-surface"
                   }`}
                 >
-                  {t(link.labelKey)}
+                  <Icon className="w-4 h-4" />
+                  <span>{t(link.labelKey, link.defaultLabel)}</span>
                 </Link>
               );
             })}
@@ -232,14 +191,14 @@ export function Header({ user }: HeaderProps) {
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center py-2.5 text-sm font-medium text-foreground hover:bg-surface border border-border rounded transition-colors"
               >
-                {t("nav.login")}
+                {t("nav.login", "Log in")}
               </Link>
               <Link
                 href="/register"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full text-center py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors"
               >
-                {t("nav.signup")}
+                {t("nav.signup", "Sign up")}
               </Link>
             </div>
           )}

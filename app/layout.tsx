@@ -4,6 +4,7 @@ import { Noto_Nastaliq_Urdu } from "next/font/google";
 import { siteConfig } from "@/config/site";
 import { DEFAULT_LANGUAGE } from "@/lib/i18n";
 import { LanguageProvider } from "@/components/providers/LanguageProvider";
+import { EventMindProvider } from "@/components/eventmind/EventMindProvider";
 import { HeaderServer } from "@/components/layout/HeaderServer";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ai/ChatWidget";
@@ -52,20 +53,22 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground antialiased selection:bg-primary-light selection:text-foreground">
         <LanguageProvider initialLanguage={DEFAULT_LANGUAGE}>
-          {/*
-            Suspense wraps HeaderServer so that the dynamic Supabase auth check
-            does not block static prerendering of the shell.
-            The header streams in immediately on first byte.
-          */}
-          <Suspense fallback={<HeaderFallback />}>
-            <HeaderServer />
-          </Suspense>
-          <Suspense fallback={<div className="flex-1" />}>
-            <main className="flex-1 flex flex-col">{children}</main>
-          </Suspense>
-          <Footer />
-          <ChatWidget />
-          <SelectionSpeaker />
+          <EventMindProvider>
+            {/*
+              Suspense wraps HeaderServer so that the dynamic Supabase auth check
+              does not block static prerendering of the shell.
+              The header streams in immediately on first byte.
+            */}
+            <Suspense fallback={<HeaderFallback />}>
+              <HeaderServer />
+            </Suspense>
+            <Suspense fallback={<div className="flex-1" />}>
+              <main className="flex-1 flex flex-col">{children}</main>
+            </Suspense>
+            <Footer />
+            <ChatWidget />
+            <SelectionSpeaker />
+          </EventMindProvider>
         </LanguageProvider>
       </body>
     </html>
