@@ -121,15 +121,34 @@ export async function applyIncrementalPlanUpdate(
       params.rawMessage.match(/\b(?:to\s*)?(\d{2,3})\b/i);
 
     const num = studentMatch ? parseInt(studentMatch[1] || "160", 10) : 160;
-    const newStudents = num < 170 ? num : Math.max(150, num - 27);
-    const newHeadcount = num < 170 ? num + 27 : num;
+    const mentionsStudents = rawLower.includes("student") || rawLower.includes("participant");
+    let newStudents = num;
+    let newHeadcount = num;
+
+    if (mentionsStudents) {
+      if (num <= 193) {
+        newStudents = num;
+        newHeadcount = num + 27;
+      } else if (num <= 220) {
+        newHeadcount = num;
+        newStudents = num - 27;
+      } else {
+        newStudents = num;
+        newHeadcount = num + 27;
+      }
+    } else {
+      newHeadcount = num;
+      newStudents = Math.max(150, num - 27);
+    }
 
     updatedVenue.expectedAttendance = newHeadcount;
     updatedVenue.headcount = newHeadcount;
     updatedVenue.students = newStudents;
+    updatedVenue.studentCount = newStudents;
 
     updatedCatering.headcount = newHeadcount;
     updatedCatering.students = newStudents;
+    updatedCatering.studentCount = newStudents;
     const unitPrice = (updatedCatering.unitPrice as number) || 1000;
     const newFoodCost = newHeadcount * unitPrice + 5000;
     const deltaFood = newFoodCost - ((updatedCatering.totalCost as number) || 182000);

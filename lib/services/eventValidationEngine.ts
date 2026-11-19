@@ -188,9 +188,22 @@ export function validateProposedPlanChange(
 
     let newStudents = proposedCount;
     let newHeadcount = proposedCount;
-    if (proposedCount < 170) {
-      newStudents = proposedCount;
-      newHeadcount = proposedCount + 10 + 17; // 10 staff + 17 judges
+
+    const mentionsStudentsExplicitly =
+      textLower.includes("student") || textLower.includes("participant");
+
+    if (mentionsStudentsExplicitly) {
+      if (proposedCount <= 193) {
+        newStudents = proposedCount;
+        newHeadcount = proposedCount + 10 + 17; // 10 staff + 17 judges
+      } else if (proposedCount <= 220) {
+        // If value is between 194 and 220 within Hall B maximum capacity:
+        newHeadcount = proposedCount;
+        newStudents = proposedCount - 27;
+      } else {
+        newStudents = proposedCount;
+        newHeadcount = proposedCount + 27;
+      }
     } else {
       newHeadcount = proposedCount;
       newStudents = Math.max(150, proposedCount - 27);

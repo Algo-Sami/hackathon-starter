@@ -521,8 +521,25 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
           rawText.match(/\b(?:to\s*)?(\d{2,3})\b/i);
 
         const proposedCount = studentMatch ? parseInt(studentMatch[1], 10) : 160;
-        const newStudents = proposedCount < 170 ? proposedCount : Math.max(150, proposedCount - 27);
-        const newHeadcount = proposedCount < 170 ? proposedCount + 27 : proposedCount;
+        const mentionsStudents = textLower.includes("student") || textLower.includes("participant");
+        let newStudents = proposedCount;
+        let newHeadcount = proposedCount;
+
+        if (mentionsStudents) {
+          if (proposedCount <= 193) {
+            newStudents = proposedCount;
+            newHeadcount = proposedCount + 27;
+          } else if (proposedCount <= 220) {
+            newHeadcount = proposedCount;
+            newStudents = proposedCount - 27;
+          } else {
+            newStudents = proposedCount;
+            newHeadcount = proposedCount + 27;
+          }
+        } else {
+          newHeadcount = proposedCount;
+          newStudents = Math.max(150, proposedCount - 27);
+        }
 
         if (newStudents < 150) {
           classification = "invalid_proposal";
@@ -755,8 +772,25 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
           rawText.match(/\b(?:to\s*)?(\d{2,3})\b/i);
 
         const num = studentMatch ? parseInt(studentMatch[1] || "160", 10) : 160;
-        const newStudents = num < 170 ? num : Math.max(150, num - 27);
-        const newHeadcount = num < 170 ? num + 27 : num;
+        const mentionsStudents = textLower.includes("student") || textLower.includes("participant");
+        let newStudents = num;
+        let newHeadcount = num;
+
+        if (mentionsStudents) {
+          if (num <= 193) {
+            newStudents = num;
+            newHeadcount = num + 27;
+          } else if (num <= 220) {
+            newHeadcount = num;
+            newStudents = num - 27;
+          } else {
+            newStudents = num;
+            newHeadcount = num + 27;
+          }
+        } else {
+          newHeadcount = num;
+          newStudents = Math.max(150, num - 27);
+        }
 
         updatedVenue = {
           ...updatedVenue,

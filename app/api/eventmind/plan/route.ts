@@ -22,15 +22,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ plan: initialEventPlanState }, { status: 200 });
     }
 
+    const catering = (planRow.catering_details as Record<string, unknown>) || {};
+    const headcount = (catering.headcount as number) || (planRow.headcount as number) || 177;
+    const studentCount =
+      (catering.studentCount as number) ||
+      (catering.students as number) ||
+      (headcount > 27 ? headcount - 27 : 150);
+
     // Merge baseline structure with stored jsonb sections
     const mergedPlan = {
       ...initialEventPlanState,
       version: planRow.version || initialEventPlanState.version,
       isValid: planRow.is_valid,
       lastUpdated: planRow.last_updated_at || initialEventPlanState.lastUpdated,
-      venue: { ...initialEventPlanState.venue, ...((planRow.venue_details as Record<string, unknown>) || {}) },
-      catering: { ...initialEventPlanState.food, ...((planRow.catering_details as Record<string, unknown>) || {}) },
-      food: { ...initialEventPlanState.food, ...((planRow.catering_details as Record<string, unknown>) || {}) },
+      venue: {
+        ...initialEventPlanState.venue,
+        ...((planRow.venue_details as Record<string, unknown>) || {}),
+        expectedAttendance: headcount,
+        headcount,
+        studentCount,
+      },
+      catering: { ...initialEventPlanState.food, ...catering, headcount, studentCount },
+      food: { ...initialEventPlanState.food, ...catering, headcount, studentCount },
       budget: { ...initialEventPlanState.budget, ...((planRow.budget_details as Record<string, unknown>) || {}) },
       schedule: { ...initialEventPlanState.schedule, ...((planRow.schedule_details as Record<string, unknown>) || {}) },
       judging: { ...initialEventPlanState.judging, ...((planRow.judging_details as Record<string, unknown>) || {}) },

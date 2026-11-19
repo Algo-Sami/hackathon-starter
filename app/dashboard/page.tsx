@@ -688,10 +688,22 @@ export default function AgentDashboardPage() {
                   <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
                     <span className="text-neutral-500 block text-[11px]">Students</span>
                     <strong className="text-sm font-bold text-neutral-900">
-                      {state.food.studentCount || (state.food.headcount ? state.food.headcount - 27 : 150)} Participants
+                      {state.food.studentCount && state.food.studentCount !== 150
+                        ? state.food.studentCount
+                        : state.food.headcount > 27
+                        ? state.food.headcount - 27
+                        : state.food.studentCount || 150}{" "}
+                      Participants
                     </strong>
                     <span className="text-[10px] text-neutral-400 block">
-                      {Math.ceil(((state.food.studentCount || (state.food.headcount ? state.food.headcount - 27 : 150)) / 3))} Teams (3/team)
+                      {Math.ceil(
+                        (state.food.studentCount && state.food.studentCount !== 150
+                          ? state.food.studentCount
+                          : state.food.headcount > 27
+                          ? state.food.headcount - 27
+                          : state.food.studentCount || 150) / 3
+                      )}{" "}
+                      Teams (3/team)
                     </span>
                   </div>
                   <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
