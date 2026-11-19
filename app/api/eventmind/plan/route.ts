@@ -46,7 +46,14 @@ export async function GET(request: NextRequest) {
       food: { ...initialEventPlanState.food, ...catering, headcount, studentCount },
       budget: { ...initialEventPlanState.budget, ...((planRow.budget_details as Record<string, unknown>) || {}) },
       schedule: { ...initialEventPlanState.schedule, ...((planRow.schedule_details as Record<string, unknown>) || {}) },
-      judging: { ...initialEventPlanState.judging, ...((planRow.judging_details as Record<string, unknown>) || {}) },
+      judging: {
+        ...initialEventPlanState.judging,
+        ...((planRow.judging_details as Record<string, unknown>) || {}),
+        totalStudents: studentCount,
+        totalTeams:
+          ((planRow.judging_details as Record<string, unknown>)?.totalTeams as number) ||
+          Math.ceil(studentCount / 3),
+      },
     };
 
     return NextResponse.json({ plan: mergedPlan }, { status: 200 });

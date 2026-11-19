@@ -805,6 +805,12 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
           studentCount: newStudents,
           totalCost: newTotalFood,
         };
+        const calculatedTeams = Math.ceil(newStudents / 3);
+        updatedJudging = {
+          ...updatedJudging,
+          totalStudents: newStudents,
+          totalTeams: calculatedTeams,
+        };
         const updatedItems = updatedBudget.items.map((item) =>
           item.category === "food" ? { ...item, amount: newTotalFood } : item
         );

@@ -914,7 +914,18 @@ export default function AgentDashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="p-3 bg-neutral-50 rounded-xl">
                       <span className="text-neutral-500 block text-[11px]">Teams to Judge</span>
-                      <strong className="text-sm font-bold text-neutral-900">50 Teams Total</strong>
+                      <strong className="text-sm font-bold text-neutral-900">
+                        {state.judging.totalTeams && state.judging.totalTeams !== 50
+                          ? state.judging.totalTeams
+                          : Math.ceil(
+                              (state.food.studentCount && state.food.studentCount !== 150
+                                ? state.food.studentCount
+                                : state.food.headcount > 27
+                                ? state.food.headcount - 27
+                                : 150) / 3
+                            )}{" "}
+                        Teams Total
+                      </strong>
                     </div>
                     <div className="p-3 bg-neutral-50 rounded-xl">
                       <span className="text-neutral-500 block text-[11px]">Workload Cap</span>

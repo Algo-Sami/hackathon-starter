@@ -149,6 +149,9 @@ export async function applyIncrementalPlanUpdate(
     updatedCatering.headcount = newHeadcount;
     updatedCatering.students = newStudents;
     updatedCatering.studentCount = newStudents;
+    const calculatedTeams = Math.ceil(newStudents / 3);
+    updatedJudging.totalStudents = newStudents;
+    updatedJudging.totalTeams = calculatedTeams;
     const unitPrice = (updatedCatering.unitPrice as number) || 1000;
     const newFoodCost = newHeadcount * unitPrice + 5000;
     const deltaFood = newFoodCost - ((updatedCatering.totalCost as number) || 182000);
