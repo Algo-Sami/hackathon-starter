@@ -119,7 +119,9 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
             sender_name?: string;
             sender_role?: string;
             created_at?: string;
+            message_content?: string;
             raw_content?: string;
+            rawText?: string;
             classification?: EventMessage["classification"];
             decision_status?: EventMessage["decisionStatus"];
             decision_reason?: string;
@@ -138,7 +140,7 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
                       hour: "2-digit",
                       minute: "2-digit",
                     }) + ", Today",
-                  rawText: m.raw_content || "",
+                  rawText: m.message_content || m.raw_content || m.rawText || "",
                   language: "en",
                   classification: m.classification || "confirmed_fact",
                   decisionStatus: m.decision_status || "accepted",
@@ -230,7 +232,9 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
                   sender_name?: string;
                   sender_role?: string;
                   created_at?: string;
+                  message_content?: string;
                   raw_content?: string;
+                  rawText?: string;
                   classification?: EventMessage["classification"];
                   decision_status?: EventMessage["decisionStatus"];
                   decision_reason?: string;
@@ -248,7 +252,7 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
                         hour: "2-digit",
                         minute: "2-digit",
                       }) + ", Today",
-                    rawText: m.raw_content || "",
+                    rawText: m.message_content || m.raw_content || m.rawText || "",
                     language: "en",
                     classification: m.classification || "confirmed_fact",
                     decisionStatus: m.decision_status || "accepted",
@@ -316,40 +320,42 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     setIsProcessing(true);
     setLastActionResult(null);
 
-    const activeRole = roleOverride || currentUserRole;
-    const authorName = sender || `${activeRole} Member`;
-
-    // Dispatch to real backend API (Multi-provider fallback: Gemini -> Groq -> OpenAI -> Queue)
-    let backendResult: {
-      success?: boolean;
-      messageId?: string;
-      senderName?: string;
-      senderRole?: string;
-      rawText?: string;
-      classification?: EventMessage["classification"];
-      decisionStatus?: EventMessage["decisionStatus"];
-      decisionReason?: string;
-      affectedAreas?: AreaTag[];
-      planVersion?: number;
-      historyId?: string;
-      updatedPlan?: Record<string, unknown>;
-    } | null = null;
     try {
-      const apiRes = await fetch("/api/eventmind/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: rawText,
-          userRole: activeRole,
-          senderName: authorName,
-        }),
-      });
-      if (apiRes.ok) {
-        backendResult = await apiRes.json();
+      const activeRole = roleOverride || currentUserRole;
+      const authorName = sender || `${activeRole} Member`;
+
+      // Dispatch to real backend API (Multi-provider fallback: Gemini -> Groq -> OpenAI -> Queue)
+      let backendResult: {
+        success?: boolean;
+        messageId?: string;
+        senderName?: string;
+        senderRole?: string;
+        rawText?: string;
+        classification?: EventMessage["classification"];
+        decisionStatus?: EventMessage["decisionStatus"];
+        decisionReason?: string;
+        affectedAreas?: AreaTag[];
+        planVersion?: number;
+        historyId?: string;
+        updatedPlan?: Record<string, unknown>;
+      } | null = null;
+      try {
+        const apiRes = await fetch("/api/eventmind/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(6000),
+          body: JSON.stringify({
+            message: rawText,
+            userRole: activeRole,
+            senderName: authorName,
+          }),
+        });
+        if (apiRes.ok) {
+          backendResult = await apiRes.json();
+        }
+      } catch {
+        // Fallback to local deterministic execution if offline or timeout
       }
-    } catch {
-      // Fallback to local deterministic execution if offline
-    }
 
     const nextSeq = state.messages.length + 1;
     const msgId = backendResult?.messageId || `MSG-00${nextSeq}`;
@@ -823,7 +829,6 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     };
 
     saveState(newState);
-    setIsProcessing(false);
 
     // Sync latest plan from database in background
     fetch("/api/eventmind/plan")
@@ -856,7 +861,13 @@ export function EventMindProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { success: !isInvalidProposal, messageId: msgId };
-  };
+  } catch (err) {
+    console.error("[EventMind submitNewMessage Error]", err);
+    return { success: false, messageId: `MSG-ERR-${Date.now()}` };
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   // Upload message pack or text document (.txt, .json, .csv)
   const uploadMessagePack = async (fileContent: string, fileName: string): Promise<boolean> => {

@@ -155,7 +155,7 @@ export function validateProposedPlanChange(
     "Finance Person": ["Budget", "General"],
     "Venue Manager": ["Venue", "General"],
     "Judging Coordinator": ["Judging", "Schedule", "General"],
-    "Dean": ["Budget", "Schedule", "Venue", "General"],
+    "Dean": ["Budget", "Schedule", "Venue", "Catering", "Judging", "General"],
     "Event Organizer": ["Venue", "Catering", "Budget", "Schedule", "Judging", "General"],
   };
 

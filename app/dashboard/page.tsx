@@ -496,7 +496,9 @@ export default function AgentDashboardPage() {
                                 : "bg-emerald-700 text-white rounded-tr-sm"
                             }`}
                           >
-                            <p className="whitespace-pre-wrap">{msg.rawText}</p>
+                            <p className="whitespace-pre-wrap">
+                              {msg.rawText || "Event update instruction received"}
+                            </p>
                           </div>
 
                           {/* AI Decision Rationale Card */}

@@ -120,6 +120,7 @@ OUTPUT FORMAT: Strict valid JSON matching:
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(3000),
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
@@ -169,7 +170,7 @@ OUTPUT FORMAT: Strict valid JSON matching:
         }
       }
     } catch {
-      // Fall through to next provider
+      // Fast fall-through to Groq
     }
   }
 
@@ -185,6 +186,7 @@ OUTPUT FORMAT: Strict valid JSON matching:
             "Content-Type": "application/json",
             Authorization: `Bearer ${groqKey}`,
           },
+          signal: AbortSignal.timeout(3500),
           body: JSON.stringify({
             model: "openai/gpt-oss-120b",
             messages: [{ role: "user", content: prompt }],
@@ -246,6 +248,7 @@ OUTPUT FORMAT: Strict valid JSON matching:
             "Content-Type": "application/json",
             Authorization: `Bearer ${openAiKey}`,
           },
+          signal: AbortSignal.timeout(3500),
           body: JSON.stringify({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
